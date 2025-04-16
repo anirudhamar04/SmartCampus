@@ -6,7 +6,7 @@ import com.smartcampus.model.User;
 import com.smartcampus.repository.VisitorPassRepository;
 import com.smartcampus.repository.UserRepository;
 import com.smartcampus.service.VisitorPassService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,11 +15,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class VisitorPassServiceImpl implements VisitorPassService {
 
     private final VisitorPassRepository visitorPassRepository;
     private final UserRepository userRepository;
+    
+    @Autowired
+    public VisitorPassServiceImpl(VisitorPassRepository visitorPassRepository, UserRepository userRepository) {
+        this.visitorPassRepository = visitorPassRepository;
+        this.userRepository = userRepository;
+    }
 
     @Override
     @Transactional

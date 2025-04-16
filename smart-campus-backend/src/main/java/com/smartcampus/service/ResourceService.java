@@ -3,7 +3,7 @@ package com.smartcampus.service;
 import com.smartcampus.dto.ResourceDTO;
 import com.smartcampus.model.Resource;
 import com.smartcampus.repository.ResourceRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,10 +12,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
+
+    @Autowired
+    public ResourceService(ResourceRepository resourceRepository) {
+        this.resourceRepository = resourceRepository;
+    }
 
     @Transactional
     public ResourceDTO createResource(ResourceDTO resourceDTO) {

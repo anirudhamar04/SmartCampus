@@ -2,7 +2,7 @@ package com.smartcampus.controller;
 
 import com.smartcampus.dto.ResourceDTO;
 import com.smartcampus.service.ResourceService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,10 +10,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/resources")
-@RequiredArgsConstructor
 public class ResourceController {
 
     private final ResourceService resourceService;
+    
+    @Autowired
+    public ResourceController(ResourceService resourceService) {
+        this.resourceService = resourceService;
+    }
 
     @PostMapping
     public ResponseEntity<ResourceDTO> createResource(@RequestBody ResourceDTO resourceDTO) {

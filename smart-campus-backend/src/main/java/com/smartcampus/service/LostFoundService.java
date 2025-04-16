@@ -5,7 +5,7 @@ import com.smartcampus.model.LostFoundItem;
 import com.smartcampus.model.User;
 import com.smartcampus.repository.LostFoundItemRepository;
 import com.smartcampus.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,11 +14,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class LostFoundService {
 
     private final LostFoundItemRepository lostFoundItemRepository;
     private final UserRepository userRepository;
+    
+    @Autowired
+    public LostFoundService(LostFoundItemRepository lostFoundItemRepository, UserRepository userRepository) {
+        this.lostFoundItemRepository = lostFoundItemRepository;
+        this.userRepository = userRepository;
+    }
 
     @Transactional
     public LostFoundItemDTO reportLostItem(LostFoundItemDTO itemDTO) {

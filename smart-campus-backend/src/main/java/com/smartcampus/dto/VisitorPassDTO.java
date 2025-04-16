@@ -22,6 +22,7 @@ public class VisitorPassDTO {
     private LocalDateTime approvedAt;
     private Long approvedById;
     private String approvedByName;
+    private LocalDateTime checkedOutAt;
 
     // Getters
     public Long getId() {
@@ -100,6 +101,10 @@ public class VisitorPassDTO {
         return approvedByName;
     }
 
+    public LocalDateTime getCheckedOutAt() {
+        return checkedOutAt;
+    }
+
     // Setters
     public void setId(Long id) {
         this.id = id;
@@ -175,5 +180,9 @@ public class VisitorPassDTO {
 
     public void setApprovedByName(String approvedByName) {
         this.approvedByName = approvedByName;
+    }
+
+    public void setCheckedOutAt(LocalDateTime checkedOutAt) {
+        this.checkedOutAt = checkedOutAt;
     }
 } 

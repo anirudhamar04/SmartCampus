@@ -1,0 +1,14 @@
+com/smartcampus/dto/FeedbackDTO.class
+com/smartcampus/controller/UserController.class
+com/smartcampus/controller/CafeteriaController.class
+com/smartcampus/controller/FeedbackController.class
+com/smartcampus/repository/FeedbackRepository.class
+com/smartcampus/service/UserService.class
+com/smartcampus/model/Resource.class
+com/smartcampus/service/FeedbackService.class
+com/smartcampus/model/User.class
+com/smartcampus/model/Role.class
+com/smartcampus/dto/EventDTO.class
+com/smartcampus/model/Feedback.class
+com/smartcampus/repository/UserRepository.class
+com/smartcampus/dto/UserDTO.class

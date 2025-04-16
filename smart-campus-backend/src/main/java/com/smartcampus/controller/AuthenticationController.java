@@ -33,6 +33,7 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest) {
         try {
+            System.out.println("Login attempt with username: " + loginRequest.get("username"));
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                     loginRequest.get("username"),
@@ -44,20 +45,36 @@ public class AuthenticationController {
             User user = (User) authentication.getPrincipal();
             String jwt = jwtUtil.generateToken(user);
 
+            System.out.println("Login successful. JWT generated for user: " + user.getUsername());
+
             Map<String, Object> response = new HashMap<>();
             response.put("token", jwt);
             response.put("user", convertToDTO(user));
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.out.println("Error during login: " + e.getMessage());
             return ResponseEntity.badRequest().body("Invalid username or password");
         }
     }
 
     @PostMapping("/register")
     public ResponseEntity<UserDTO> register(@RequestBody User user) {
+        // Log the incoming request to see if it's hitting the controller
+        System.out.println("Inside register method");
+        System.out.println("Received user: " + user);
+
+        // Log the user password
+        System.out.println("User password: " + user.getPassword());
+
+        // Convert User to UserDTO
         UserDTO userDTO = convertToDTO(user);
+        System.out.println("Converted UserDTO: " + userDTO);
+
+        // Call the userService to create the user
         UserDTO createdUser = userService.createUser(userDTO);
+        System.out.println("User created successfully: " + createdUser);
+
         return ResponseEntity.ok(createdUser);
     }
 
@@ -66,16 +83,19 @@ public class AuthenticationController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof User) {
             User user = (User) authentication.getPrincipal();
+            System.out.println("Current authenticated user: " + user.getUsername());
             return ResponseEntity.ok(convertToDTO(user));
         }
+        System.out.println("User not authenticated");
         return ResponseEntity.badRequest().body("User not authenticated");
     }
-    
+
     private UserDTO convertToDTO(User user) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setFullName(user.getFullName());
+        dto.setPassword(user.getPassword());
         dto.setEmail(user.getEmail());
         dto.setPhoneNumber(user.getPhoneNumber());
         dto.setRole(user.getRole().toString());
@@ -83,6 +103,9 @@ public class AuthenticationController {
         dto.setAccountNonExpired(user.isAccountNonExpired());
         dto.setAccountNonLocked(user.isAccountNonLocked());
         dto.setCredentialsNonExpired(user.isCredentialsNonExpired());
+
+        // Log the converted UserDTO
+        System.out.println("Converted UserDTO: " + dto);
         return dto;
     }
-} 
+}

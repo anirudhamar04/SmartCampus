@@ -1,105 +1,171 @@
 package com.smartcampus.service;
 
 import com.smartcampus.dto.UserDTO;
-import com.smartcampus.model.Role;
 import com.smartcampus.model.User;
+import com.smartcampus.model.Role;
 import com.smartcampus.repository.UserRepository;
+import com.smartcampus.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 public class UserService {
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;  // For password hashing
+
+    // Create User
+    public UserDTO createUser(UserDTO userDTO) {
+    System.out.println("Inside createUser method in UserService");
+
+    // Log the UserDTO received
+    System.out.println("Received UserDTO: " + userDTO);
+    System.out.println("Received password: " + userDTO.getPassword());
+
+    if (userDTO.getPassword() == null || userDTO.getPassword().isEmpty()) {
+        throw new IllegalArgumentException("Password is required");
     }
 
-    public UserDTO createUser(UserDTO userDTO) {
-        User user = new User();
-        user.setUsername(userDTO.getUsername());
-        user.setEmail(userDTO.getEmail());
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        user.setFullName(userDTO.getFullName());
-        user.setPhoneNumber(userDTO.getPhoneNumber());
-        user.setRole(Role.valueOf(userDTO.getRole()));
-        user.setEnabled(true);
-        
-        user = userRepository.save(user);
+    // Hash the password
+    String encodedPassword = passwordEncoder.encode(userDTO.getPassword());
+    System.out.println("Encoded password: " + encodedPassword);  // Log the encoded password
+
+    User user = convertToEntity(userDTO);  // Convert DTO to Entity
+    user.setPassword(encodedPassword);  // Set hashed password
+    System.out.println("User entity after setting password: " + user);
+
+    User savedUser = userRepository.save(user);
+    System.out.println("User saved successfully: " + savedUser);
+
+    return convertToDTO(savedUser);  // Convert saved entity back to DTO
+}
+
+
+    // Update User
+    public UserDTO updateUser(Long id, UserDTO userDTO) {
+        System.out.println("Attempting to update user with ID: " + id);
+
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    System.out.println("User with ID: " + id + " not found");
+                    return new UserNotFoundException("User not found");
+                });
+
+        System.out.println("User with ID: " + id + " found, proceeding to update");
+
+        // Update properties of the existing user
+        existingUser.setUsername(userDTO.getUsername());
+        existingUser.setFullName(userDTO.getFullName());
+        existingUser.setEmail(userDTO.getEmail());
+        existingUser.setPhoneNumber(userDTO.getPhoneNumber());
+        existingUser.setRole(Role.valueOf(userDTO.getRole()));  // Assuming Role is an enum
+        existingUser.setEnabled(userDTO.isEnabled());
+        existingUser.setAccountNonExpired(userDTO.isAccountNonExpired());
+        existingUser.setAccountNonLocked(userDTO.isAccountNonLocked());
+        existingUser.setCredentialsNonExpired(userDTO.isCredentialsNonExpired());
+
+        System.out.println("User with ID: " + id + " updated with new values.");
+        System.out.println("New Username: " + existingUser.getUsername());
+        System.out.println("New Full Name: " + existingUser.getFullName());
+        System.out.println("New Email: " + existingUser.getEmail());
+        System.out.println("New Phone Number: " + existingUser.getPhoneNumber());
+
+        // If password is updated, hash it
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));  // Hash the new password
+            System.out.println("Password updated and hashed for user with ID: " + id);
+        }
+
+        User updatedUser = userRepository.save(existingUser);
+        System.out.println("User with ID: " + id + " successfully updated");
+
+        return convertToDTO(updatedUser);
+    }
+
+    // Delete User
+    public void deleteUser(Long id) {
+        System.out.println("Attempting to delete user with ID: " + id);
+        userRepository.deleteById(id);
+        System.out.println("User with ID: " + id + " successfully deleted");
+    }
+
+    // Get User by ID
+    public UserDTO getUserDTOById(Long id) {
+        System.out.println("Attempting to get user with ID: " + id);
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    System.out.println("User with ID: " + id + " not found");
+                    return new UserNotFoundException("User not found");
+                });
+
+        System.out.println("User with ID: " + id + " found: " + user.getUsername());
+
         return convertToDTO(user);
     }
 
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
-    }
-
-    public UserDTO getUserDTOById(Long id) {
-        return userRepository.findById(id)
-                .map(this::convertToDTO)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-    }
-
-    public Optional<User> getUserByUsername(String username) {
-        return userRepository.findByUsername(username);
-    }
-
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
+    // Get all Users
     public List<UserDTO> getAllUsersDTO() {
-        return userRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        System.out.println("Fetching all users");
+
+        List<User> users = userRepository.findAll();
+        System.out.println("Found " + users.size() + " users");
+
+        return users.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public UserDTO updateUser(Long id, UserDTO userDTO) {
-        return userRepository.findById(id)
-                .map(existingUser -> {
-                    existingUser.setUsername(userDTO.getUsername());
-                    existingUser.setEmail(userDTO.getEmail());
-                    existingUser.setFullName(userDTO.getFullName());
-                    existingUser.setPhoneNumber(userDTO.getPhoneNumber());
-                    existingUser.setRole(Role.valueOf(userDTO.getRole()));
-                    
-                    if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
-                        existingUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-                    }
-                    
-                    User savedUser = userRepository.save(existingUser);
-                    return convertToDTO(savedUser);
-                })
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+    // Get Users by Role
+    public List<UserDTO> getUsersByRole(String role) {
+        System.out.println("Fetching users with role: " + role);
+
+        List<User> users = userRepository.findByRole(Role.valueOf(role)); // Assuming Role is an enum
+        System.out.println("Found " + users.size() + " users with role: " + role);
+
+        return users.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+    // Convert UserDTO to User
+    private User convertToEntity(UserDTO userDTO) {
+        System.out.println("Converting UserDTO to User entity for: " + userDTO.getUsername());
+        
+        User user = new User();
+        user.setUsername(userDTO.getUsername());
+        user.setPassword(userDTO.getPassword()); // Password will be hashed later in the service
+        user.setFullName(userDTO.getFullName());
+        user.setEmail(userDTO.getEmail());
+        user.setPhoneNumber(userDTO.getPhoneNumber());
+        user.setRole(Role.valueOf(userDTO.getRole())); // Assuming Role is an enum
+        user.setEnabled(userDTO.isEnabled());
+        user.setAccountNonExpired(userDTO.isAccountNonExpired());
+        user.setAccountNonLocked(userDTO.isAccountNonLocked());
+        user.setCredentialsNonExpired(userDTO.isCredentialsNonExpired());
+
+        return user;
     }
 
-    public UserDTO convertToDTO(User user) {
+    // Convert User to UserDTO
+    private UserDTO convertToDTO(User user) {
+        System.out.println("Converting User entity to UserDTO for: " + user.getUsername());
+
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setFullName(user.getFullName());
         dto.setEmail(user.getEmail());
         dto.setPhoneNumber(user.getPhoneNumber());
-        dto.setRole(user.getRole().name());
+        dto.setRole(user.getRole().toString()); // Assuming role is an enum
         dto.setEnabled(user.isEnabled());
+        dto.setAccountNonExpired(user.isAccountNonExpired());
+        dto.setAccountNonLocked(user.isAccountNonLocked());
+        dto.setCredentialsNonExpired(user.isCredentialsNonExpired());
+
         return dto;
     }
-
-    public List<UserDTO> getUsersByRole(String role) {
-        return userRepository.findByRole(Role.valueOf(role.toUpperCase())).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-} 
+}

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
-    email: '',
+    username: '', // updated from 'email'
     password: ''
   });
   const [error, setError] = useState('');
@@ -26,8 +26,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const result = await login(credentials.email, credentials.password);
-      
+      console.log(credentials)
+      const result = await login(credentials.username, credentials.password); // updated
       if (result.success) {
         navigate('/');
       } else {
@@ -53,18 +53,18 @@ const Login = () => {
       
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label htmlFor="email" className="block text-primary-300 mb-2">
-            Email
+          <label htmlFor="username" className="block text-primary-300 mb-2">
+            Username
           </label>
           <input
-            type="email"
-            id="email"
-            name="email"
-            value={credentials.email}
+            type="text"
+            id="username"
+            name="username"
+            value={credentials.username}
             onChange={handleChange}
             required
             className="input w-full"
-            placeholder="Enter your email"
+            placeholder="Enter your username"
           />
         </div>
         
@@ -103,4 +103,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

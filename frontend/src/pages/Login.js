@@ -29,7 +29,14 @@ const Login = () => {
       console.log(credentials)
       const result = await login(credentials.username, credentials.password); // updated
       if (result.success) {
-        navigate('/');
+        // Redirect based on user role
+        if (result.role === 'FACULTY') {
+          navigate('/teacher/dashboard');
+        } else if (result.role === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/');
+        }
       } else {
         setError(result.message || 'Failed to login. Please check your credentials.');
       }

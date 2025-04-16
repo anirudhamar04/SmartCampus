@@ -15,14 +15,31 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Users from './pages/Users';
 
+// Teacher Pages
+import TeacherDashboard from './pages/teacher/Dashboard';
+import AttendanceManagement from './pages/teacher/AttendanceManagement';
+import FeedbackManagement from './pages/teacher/FeedbackManagement';
+import NotificationManagement from './pages/teacher/NotificationManagement';
+import EventManagement from './pages/teacher/EventManagement';
+import ResourceManagement from './pages/teacher/ResourceManagement';
+import FacilityBooking from './pages/teacher/FacilityBooking';
+
 // Error Pages
 import NotFound from './pages/NotFound';
 
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const { isAuthenticated, userRole, loading } = useAuth();
+  
+  if (loading) {
+    return <div>Loading...</div>;
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
+  }
+  
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/" />;
   }
   
   return children;
@@ -37,7 +54,7 @@ const App = () => {
         <Route path="/register" element={<Register />} />
       </Route>
       
-      {/* Protected Routes */}
+      {/* Protected Routes - Admin & Common */}
       <Route element={
         <ProtectedRoute>
           <DashboardLayout />
@@ -46,6 +63,21 @@ const App = () => {
         <Route path="/" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/users" element={<Users />} />
+      </Route>
+      
+      {/* Teacher Routes */}
+      <Route element={
+        <ProtectedRoute allowedRoles={['FACULTY']}>
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+        <Route path="/teacher/attendance" element={<AttendanceManagement />} />
+        <Route path="/teacher/feedback" element={<FeedbackManagement />} />
+        <Route path="/teacher/notifications" element={<NotificationManagement />} />
+        <Route path="/teacher/events" element={<EventManagement />} />
+        <Route path="/teacher/resources" element={<ResourceManagement />} />
+        <Route path="/teacher/facilities" element={<FacilityBooking />} />
       </Route>
       
       {/* Error Routes */}

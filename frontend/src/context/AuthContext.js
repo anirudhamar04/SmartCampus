@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -32,6 +33,7 @@ export const AuthProvider = ({ children }) => {
             try {
               const response = await authService.getCurrentUser();
               setCurrentUser(response.data);
+              setUserRole(response.data.role);
               setIsAuthenticated(true);
             } catch (error) {
               console.error('Failed to fetch user details:', error);
@@ -57,7 +59,16 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       setToken(token);
       
-      return { success: true };
+      // Get user details right after login
+      try {
+        const userResponse = await authService.getCurrentUser();
+        setCurrentUser(userResponse.data);
+        setUserRole(userResponse.data.role);
+      } catch (error) {
+        console.error('Failed to fetch user details after login:', error);
+      }
+      
+      return { success: true, role: userResponse?.data?.role };
     } catch (error) {
       return {
         success: false,
@@ -82,8 +93,21 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     setToken(null);
     setCurrentUser(null);
+    setUserRole(null);
     setIsAuthenticated(false);
     delete axios.defaults.headers.common['Authorization'];
+  };
+
+  const isFaculty = () => {
+    return userRole === 'FACULTY';
+  };
+
+  const isAdmin = () => {
+    return userRole === 'ADMIN';
+  };
+
+  const isStudent = () => {
+    return userRole === 'STUDENT';
   };
 
   const value = {
@@ -92,7 +116,11 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
-    logout
+    logout,
+    userRole,
+    isFaculty,
+    isAdmin,
+    isStudent
   };
 
   return (

@@ -5,7 +5,7 @@ import com.smartcampus.model.Attendance;
 import com.smartcampus.model.User;
 import com.smartcampus.repository.AttendanceRepository;
 import com.smartcampus.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,11 +14,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
+
+    @Autowired
+    public AttendanceService(AttendanceRepository attendanceRepository, UserRepository userRepository) {
+        this.attendanceRepository = attendanceRepository;
+        this.userRepository = userRepository;
+    }
 
     @Transactional
     public AttendanceDTO createAttendance(AttendanceDTO attendanceDTO) {
@@ -40,7 +45,7 @@ public class AttendanceService {
     @Transactional
     public AttendanceDTO updateAttendance(Long id, AttendanceDTO attendanceDTO) {
         Attendance attendance = attendanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Attendance record not found"));
+                .orElseThrow(() -> new RuntimeException("Attendance not found"));
 
         attendance.setCheckInTime(attendanceDTO.getCheckInTime());
         attendance.setCheckOutTime(attendanceDTO.getCheckOutTime());
@@ -54,7 +59,7 @@ public class AttendanceService {
 
     public AttendanceDTO getAttendanceById(Long id) {
         Attendance attendance = attendanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Attendance record not found"));
+                .orElseThrow(() -> new RuntimeException("Attendance not found"));
         return convertToDTO(attendance);
     }
 

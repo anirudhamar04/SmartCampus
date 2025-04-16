@@ -60,6 +60,9 @@ public class VisitorPass {
     @JoinColumn(name = "approved_by_id")
     private User approvedBy;
 
+    @Column
+    private LocalDateTime checkedOutAt;
+
     // Getters and Setters
     public Long getId() {
         return id;
@@ -195,5 +198,13 @@ public class VisitorPass {
 
     public void setApprovedBy(User approvedBy) {
         this.approvedBy = approvedBy;
+    }
+
+    public LocalDateTime getCheckedOutAt() {
+        return checkedOutAt;
+    }
+
+    public void setCheckedOutAt(LocalDateTime checkedOutAt) {
+        this.checkedOutAt = checkedOutAt;
     }
 } 

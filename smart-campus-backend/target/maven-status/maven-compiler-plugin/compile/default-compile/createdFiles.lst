@@ -1,6 +1,5 @@
 com/smartcampus/dto/FeedbackDTO.class
 com/smartcampus/controller/UserController.class
-com/smartcampus/controller/CafeteriaController.class
 com/smartcampus/controller/FeedbackController.class
 com/smartcampus/repository/FeedbackRepository.class
 com/smartcampus/service/UserService.class

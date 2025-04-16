@@ -7,7 +7,9 @@
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/dto/ResourceDTO.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/controller/AttendanceController.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/controller/CafeteriaController.java
+/Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/service/EventServiceImpl.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/model/User.java
+/Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/service/VisitorPassServiceImpl.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/controller/AuthenticationController.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/controller/EventController.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/model/Event.java
@@ -36,6 +38,7 @@
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/controller/ResourceController.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/repository/ResourceRepository.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/model/CafeteriaItem.java
+/Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/service/impl/VisitorPassServiceImpl.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/repository/CafeteriaItemRepository.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/service/FeedbackService.java
 /Users/aneesh/ooadproject/smart-campus-backend/src/main/java/com/smartcampus/SmartCampusApplication.java

@@ -19,6 +19,9 @@ public class CafeteriaItem {
     @Column(nullable = false)
     private BigDecimal price;
 
+    @Column(nullable = false)
+    private Integer quantity;
+
     @Column
     private String category; // FOOD, BEVERAGE, SNACK
 
@@ -68,6 +71,14 @@ public class CafeteriaItem {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 
     public String getCategory() {

@@ -41,11 +41,11 @@ public class AuthenticationController {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            String jwt = jwtUtil.generateToken((User) authentication.getPrincipal());
+            User user = (User) authentication.getPrincipal();
+            String jwt = jwtUtil.generateToken(user);
 
             Map<String, Object> response = new HashMap<>();
             response.put("token", jwt);
-            User user = (User) authentication.getPrincipal();
             response.put("user", convertToDTO(user));
 
             return ResponseEntity.ok(response);
@@ -56,9 +56,9 @@ public class AuthenticationController {
 
     @PostMapping("/register")
     public ResponseEntity<UserDTO> register(@RequestBody User user) {
-        User createdUser = userService.createUser(user);
-        UserDTO userDTO = convertToDTO(createdUser);
-        return ResponseEntity.ok(userDTO);
+        UserDTO userDTO = convertToDTO(user);
+        UserDTO createdUser = userService.createUser(userDTO);
+        return ResponseEntity.ok(createdUser);
     }
 
     @GetMapping("/me")

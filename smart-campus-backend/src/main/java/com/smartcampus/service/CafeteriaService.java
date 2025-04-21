@@ -1,6 +1,7 @@
 package com.smartcampus.service;
 
 import com.smartcampus.dto.CafeteriaOrderDTO;
+import com.smartcampus.dto.CafeteriaItemDTO;
 import com.smartcampus.model.CafeteriaItem;
 import com.smartcampus.model.CafeteriaOrder;
 import com.smartcampus.model.CafeteriaOrderItem;
@@ -122,6 +123,44 @@ public class CafeteriaService {
             return itemDTO;
         }).collect(Collectors.toList()));
 
+        return dto;
+    }
+
+    // Add method to get all items
+    public List<CafeteriaItemDTO> getAllItems() {
+        return itemRepository.findAll().stream()
+                .map(this::convertItemToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Add method to get item by ID
+    public CafeteriaItemDTO getItemById(Long id) {
+        CafeteriaItem item = itemRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Item not found: " + id));
+        return convertItemToDTO(item);
+    }
+
+    // Add method to get items by category (only available items)
+    public List<CafeteriaItemDTO> getItemsByCategory(String category) {
+        return itemRepository.findByCategoryAndAvailable(category, true).stream()
+                .map(this::convertItemToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Helper to convert CafeteriaItem to DTO
+    private CafeteriaItemDTO convertItemToDTO(CafeteriaItem item) {
+        CafeteriaItemDTO dto = new CafeteriaItemDTO();
+        dto.setId(item.getId());
+        dto.setName(item.getName());
+        dto.setDescription(item.getDescription());
+        dto.setPrice(item.getPrice());
+        dto.setQuantity(item.getQuantity());
+        dto.setCategory(item.getCategory());
+        dto.setImageUrl(item.getImageUrl());
+        dto.setAvailable(item.isAvailable());
+        dto.setPreparationTime(item.getPreparationTime());
+        dto.setIngredients(item.getIngredients());
+        dto.setDietaryInfo(item.getDietaryInfo());
         return dto;
     }
 } 

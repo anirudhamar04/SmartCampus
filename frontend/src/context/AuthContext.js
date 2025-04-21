@@ -60,8 +60,9 @@ export const AuthProvider = ({ children }) => {
       setToken(token);
       
       // Get user details right after login
+      let userResponse = null;
       try {
-        const userResponse = await authService.getCurrentUser();
+        userResponse = await authService.getCurrentUser();
         setCurrentUser(userResponse.data);
         setUserRole(userResponse.data.role);
       } catch (error) {

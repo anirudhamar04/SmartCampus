@@ -52,6 +52,18 @@ export const authService = {
   getCurrentUser: () => api.get('/auth/me')
 };
 
+// Course services
+export const courseService = {
+  getAll: () => api.get('/courses'),
+  getById: (id) => api.get(`/courses/${id}`),
+  getMyCourses: () => api.get('/courses/my-courses'),
+  getStudentsByCourse: (courseId) => api.get(`/courses/${courseId}/students`),
+  createCourse: (data) => api.post('/courses', data),
+  updateCourse: (id, data) => api.put(`/courses/${id}`, data),
+  enrollStudent: (courseId, studentId) => api.post(`/courses/${courseId}/students/${studentId}`),
+  unenrollStudent: (courseId, studentId) => api.delete(`/courses/${courseId}/students/${studentId}`)
+};
+
 // Attendance services
 export const attendanceService = {
   getAll: () => api.get('/attendance'),

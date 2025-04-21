@@ -172,9 +172,11 @@ const Register = () => {
             className="input w-full"
             required
           >
+            <option value="STAFF">Staff</option>
             <option value="STUDENT">Student</option>
-            <option value="TEACHER">Teacher</option>
-            <option value="ADMIN">Admin</option>
+            <option value="FACULTY">Faculty</option>
+            {/* <option value="ADMIN">Admin</option> */}x``
+            <option value="GUEST">Guest</option>
           </select>
         </div>
         

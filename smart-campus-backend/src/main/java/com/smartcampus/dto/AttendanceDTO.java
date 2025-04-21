@@ -4,37 +4,45 @@ import java.time.LocalDateTime;
 
 public class AttendanceDTO {
     private Long id;
-    private Long userId;
-    private String userName;
-    private LocalDateTime checkInTime;
-    private LocalDateTime checkOutTime;
-    private String location;
+    private Long studentId;
+    private String studentName;
+    private Long courseId;
+    private String courseName;
+    private String courseCode;
+    private LocalDateTime date;
     private String status;
     private String remarks;
+    private Long recordedById;
+    private String recordedByName;
+    private LocalDateTime recordedAt;
 
     // Getters
     public Long getId() {
         return id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public Long getStudentId() {
+        return studentId;
     }
 
-    public String getUserName() {
-        return userName;
+    public String getStudentName() {
+        return studentName;
     }
 
-    public LocalDateTime getCheckInTime() {
-        return checkInTime;
+    public Long getCourseId() {
+        return courseId;
     }
 
-    public LocalDateTime getCheckOutTime() {
-        return checkOutTime;
+    public String getCourseName() {
+        return courseName;
     }
 
-    public String getLocation() {
-        return location;
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public LocalDateTime getDate() {
+        return date;
     }
 
     public String getStatus() {
@@ -45,29 +53,45 @@ public class AttendanceDTO {
         return remarks;
     }
 
+    public Long getRecordedById() {
+        return recordedById;
+    }
+
+    public String getRecordedByName() {
+        return recordedByName;
+    }
+
+    public LocalDateTime getRecordedAt() {
+        return recordedAt;
+    }
+
     // Setters
     public void setId(Long id) {
         this.id = id;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setStudentId(Long studentId) {
+        this.studentId = studentId;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setStudentName(String studentName) {
+        this.studentName = studentName;
     }
 
-    public void setCheckInTime(LocalDateTime checkInTime) {
-        this.checkInTime = checkInTime;
+    public void setCourseId(Long courseId) {
+        this.courseId = courseId;
     }
 
-    public void setCheckOutTime(LocalDateTime checkOutTime) {
-        this.checkOutTime = checkOutTime;
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
     }
 
-    public void setLocation(String location) {
-        this.location = location;
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
+    }
+
+    public void setDate(LocalDateTime date) {
+        this.date = date;
     }
 
     public void setStatus(String status) {
@@ -76,5 +100,17 @@ public class AttendanceDTO {
 
     public void setRemarks(String remarks) {
         this.remarks = remarks;
+    }
+
+    public void setRecordedById(Long recordedById) {
+        this.recordedById = recordedById;
+    }
+
+    public void setRecordedByName(String recordedByName) {
+        this.recordedByName = recordedByName;
+    }
+
+    public void setRecordedAt(LocalDateTime recordedAt) {
+        this.recordedAt = recordedAt;
     }
 } 

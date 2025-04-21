@@ -12,22 +12,27 @@ public class Attendance {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private User student;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     @Column(nullable = false)
-    private LocalDateTime checkInTime;
-
-    @Column
-    private LocalDateTime checkOutTime;
+    private LocalDateTime date;
 
     @Column(nullable = false)
-    private String location;
-
-    @Column(nullable = false)
-    private String status; // PRESENT, ABSENT, LATE, EARLY_LEAVE
+    private String status; // PRESENT, ABSENT, LATE, EXCUSED
 
     @Column
     private String remarks;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recorded_by_id")
+    private User recordedBy; // The teacher who recorded this attendance
+
+    @Column
+    private LocalDateTime recordedAt;
 
     // Getters and Setters
     public Long getId() {
@@ -38,36 +43,28 @@ public class Attendance {
         this.id = id;
     }
 
-    public User getUser() {
-        return user;
+    public User getStudent() {
+        return student;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setStudent(User student) {
+        this.student = student;
     }
 
-    public LocalDateTime getCheckInTime() {
-        return checkInTime;
+    public Course getCourse() {
+        return course;
     }
 
-    public void setCheckInTime(LocalDateTime checkInTime) {
-        this.checkInTime = checkInTime;
+    public void setCourse(Course course) {
+        this.course = course;
     }
 
-    public LocalDateTime getCheckOutTime() {
-        return checkOutTime;
+    public LocalDateTime getDate() {
+        return date;
     }
 
-    public void setCheckOutTime(LocalDateTime checkOutTime) {
-        this.checkOutTime = checkOutTime;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
+    public void setDate(LocalDateTime date) {
+        this.date = date;
     }
 
     public String getStatus() {
@@ -84,5 +81,21 @@ public class Attendance {
 
     public void setRemarks(String remarks) {
         this.remarks = remarks;
+    }
+
+    public User getRecordedBy() {
+        return recordedBy;
+    }
+
+    public void setRecordedBy(User recordedBy) {
+        this.recordedBy = recordedBy;
+    }
+
+    public LocalDateTime getRecordedAt() {
+        return recordedAt;
+    }
+
+    public void setRecordedAt(LocalDateTime recordedAt) {
+        this.recordedAt = recordedAt;
     }
 } 

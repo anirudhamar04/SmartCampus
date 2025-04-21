@@ -1,4 +1,5 @@
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\model\Notification.java
+C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\model\Course.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\service\LostFoundService.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\service\VisitorPassService.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\controller\NotificationController.java
@@ -26,6 +27,7 @@ C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\c
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\repository\CafeteriaOrderRepository.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\controller\LostFoundController.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\dto\BookingDTO.java
+C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\controller\CourseController.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\config\WebConfig.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\model\Role.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\dto\NotificationDTO.java
@@ -62,5 +64,8 @@ C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\c
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\model\CafeteriaItem.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\service\NotificationService.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\model\Attendance.java
+C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\service\CourseService.java
+C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\repository\CourseRepository.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\model\CafeteriaOrderItem.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\model\VisitorPass.java
+C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\dto\CourseDTO.java

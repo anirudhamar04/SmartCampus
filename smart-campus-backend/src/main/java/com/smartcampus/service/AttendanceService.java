@@ -68,9 +68,30 @@ public class AttendanceService {
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Attendance not found"));
         
+        // Update the status and remarks
         attendance.setStatus(attendanceDTO.getStatus());
         attendance.setRemarks(attendanceDTO.getRemarks());
         
+        // Update the date if provided
+        if (attendanceDTO.getDate() != null) {
+            attendance.setDate(attendanceDTO.getDate());
+        }
+        
+        // Update the student if ID is provided and different
+        if (attendanceDTO.getStudentId() != null && !attendanceDTO.getStudentId().equals(attendance.getStudent().getId())) {
+            User student = userRepository.findById(attendanceDTO.getStudentId())
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+            attendance.setStudent(student);
+        }
+        
+        // Update the course if ID is provided and different
+        if (attendanceDTO.getCourseId() != null && !attendanceDTO.getCourseId().equals(attendance.getCourse().getId())) {
+            Course course = courseRepository.findById(attendanceDTO.getCourseId())
+                    .orElseThrow(() -> new RuntimeException("Course not found"));
+            attendance.setCourse(course);
+        }
+        
+        // Update the teacher who recorded this attendance
         if (attendanceDTO.getRecordedById() != null) {
             User teacher = userRepository.findById(attendanceDTO.getRecordedById())
                     .orElseThrow(() -> new RuntimeException("Teacher not found"));
@@ -145,24 +166,51 @@ public class AttendanceService {
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
         
         LocalDateTime now = LocalDateTime.now();
+        // Adjust date to start of day for consistent comparison
+        LocalDateTime dateOnly = LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(), 0, 0, 0);
         
-        List<Attendance> attendances = studentIds.stream().map(studentId -> {
+        List<Attendance> attendancesToSave = studentIds.stream().map(studentId -> {
             User student = userRepository.findById(studentId)
                     .orElseThrow(() -> new RuntimeException("Student not found with ID: " + studentId));
             
-            Attendance attendance = new Attendance();
-            attendance.setStudent(student);
-            attendance.setCourse(course);
-            attendance.setDate(now);
-            attendance.setStatus(status);
-            attendance.setRemarks(remarks);
-            attendance.setRecordedBy(teacher);
-            attendance.setRecordedAt(now);
+            // Check if there's already an attendance record for this student, course, and day
+            List<Attendance> existingAttendances = attendanceRepository.findByStudentAndCourse(student, course);
             
-            return attendance;
+            // Filter attendance records for today
+            Attendance existingToday = existingAttendances.stream()
+                .filter(a -> isSameDay(a.getDate(), dateOnly))
+                .findFirst()
+                .orElse(null);
+            
+            if (existingToday != null) {
+                // Update existing attendance record
+                existingToday.setStatus(status);
+                existingToday.setRemarks(remarks);
+                existingToday.setRecordedBy(teacher);
+                existingToday.setRecordedAt(now);
+                return existingToday;
+            } else {
+                // Create new attendance record
+                Attendance attendance = new Attendance();
+                attendance.setStudent(student);
+                attendance.setCourse(course);
+                attendance.setDate(now);
+                attendance.setStatus(status);
+                attendance.setRemarks(remarks);
+                attendance.setRecordedBy(teacher);
+                attendance.setRecordedAt(now);
+                return attendance;
+            }
         }).collect(Collectors.toList());
         
-        attendanceRepository.saveAll(attendances);
+        attendanceRepository.saveAll(attendancesToSave);
+    }
+    
+    // Helper method to check if two datetime objects represent the same day
+    private boolean isSameDay(LocalDateTime date1, LocalDateTime date2) {
+        return date1.getYear() == date2.getYear() &&
+               date1.getMonth() == date2.getMonth() &&
+               date1.getDayOfMonth() == date2.getDayOfMonth();
     }
 
     private AttendanceDTO convertToDTO(Attendance attendance) {

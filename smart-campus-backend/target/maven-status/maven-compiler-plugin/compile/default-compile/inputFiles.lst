@@ -20,6 +20,7 @@ C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\c
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\controller\BookingController.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\controller\ResourceController.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\dto\AttendanceDTO.java
+C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\dto\CafeteriaItemDTO.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\security\JwtAuthenticationFilter.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\repository\NotificationRepository.java
 C:\Users\ASUS\Desktop\SmartCampusManagement\smart-campus-backend\src\main\java\com\smartcampus\service\EventServiceImpl.java

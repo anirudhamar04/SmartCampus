@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/courses")
 public class CourseController {
 
@@ -81,6 +82,14 @@ public class CourseController {
         String username = auth.getName();
         Map<String, List<UserDTO>> courseStudentsMap = courseService.getStudentsByCourseForFaculty(username);
         return ResponseEntity.ok(courseStudentsMap);
+    }
+
+    // Get all students enrolled in a specific course by course ID
+    @GetMapping("/{courseId}/students")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('FACULTY')")
+    public ResponseEntity<List<UserDTO>> getStudentsByCourse(@PathVariable Long courseId) {
+        CourseDTO course = courseService.getCourseById(courseId);
+        return ResponseEntity.ok(course.getEnrolledStudents());
     }
 
     // Get courses by student - Accessible to all authenticated users

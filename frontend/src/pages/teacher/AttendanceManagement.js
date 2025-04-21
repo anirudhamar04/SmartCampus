@@ -75,35 +75,50 @@ const AttendanceManagement = () => {
       const end = new Date(selectedDate);
       end.setHours(23, 59, 59, 999);
       
+      console.log('Fetching attendance records between:', start.toISOString(), 'and', end.toISOString());
+      
       const response = await attendanceService.getByDateRange(
         start.toISOString(),
         end.toISOString()
       );
       
+      console.log('Attendance records response:', response.data);
+      
       // Filter attendance records for the selected course
-      // This assumes attendance records contain courseId
-      // You may need to adjust this based on your data structure
       const filteredRecords = response.data.filter(record => 
-        record.courseId === selectedCourse
+        record.courseId.toString() === selectedCourse.toString()
       );
+      
+      console.log('Filtered attendance records for course:', filteredRecords);
       
       setAttendanceRecords(filteredRecords);
       
-      // Pre-fill attendance data with existing records
-      if (filteredRecords.length > 0 && students.length > 0) {
-        const updatedAttendanceData = [...attendanceData];
-        
-        students.forEach((student, index) => {
-          const existingRecord = filteredRecords.find(record => record.userId === student.id);
+      // Pre-fill attendance data with existing records only if not already set
+      // This prevents resetting student data when just refreshing records
+      if (filteredRecords.length > 0 && students.length > 0 && 
+          (attendanceData.length === 0 || attendanceData.every(record => !record.id))) {
+        const updatedAttendanceData = students.map(student => {
+          // Backend uses studentId not userId
+          const existingRecord = filteredRecords.find(record => 
+            record.studentId.toString() === student.id.toString()
+          );
+          
           if (existingRecord) {
-            updatedAttendanceData[index] = {
-              ...updatedAttendanceData[index],
-              id: existingRecord.id, // Store existing record ID for updates
+            return {
+              id: existingRecord.id,
+              userId: student.id,
               status: existingRecord.status,
-              checkInTime: existingRecord.checkInTime,
-              checkOutTime: existingRecord.checkOutTime,
-              location: existingRecord.location,
+              checkInTime: existingRecord.date,
+              location: 'Classroom',
               remarks: existingRecord.remarks || ''
+            };
+          } else {
+            return {
+              userId: student.id,
+              status: 'PRESENT',
+              checkInTime: new Date().toISOString(),
+              location: 'Classroom',
+              remarks: ''
             };
           }
         });
@@ -117,7 +132,7 @@ const AttendanceManagement = () => {
       setError('Failed to fetch attendance records. Please try again later.');
       setLoading(false);
     }
-  }, [selectedCourse, selectedDate, students, attendanceData]);
+  }, [selectedCourse, selectedDate, students]);
 
   // Fetch existing attendance records when date or course changes
   useEffect(() => {
@@ -152,27 +167,67 @@ const AttendanceManagement = () => {
       
       // Create/update attendance records for each student
       const promises = attendanceData.map(record => {
+        // Format date properly - convert from YYYY-MM-DD to full ISO date
+        const dateObj = new Date(selectedDate);
+        dateObj.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+        
+        const formattedDate = dateObj.toISOString();
+        
+        // Prepare data with correct field names for the backend
+        const attendancePayload = {
+          studentId: record.userId, // Convert userId to studentId
+          courseId: selectedCourse,
+          date: formattedDate,      // Use date instead of attendanceDate
+          status: record.status,
+          remarks: record.remarks || '',
+          recordedById: currentUser.id
+        };
+        
         // If record has an ID, it already exists and needs to be updated
         if (record.id) {
-          return attendanceService.update(record.id, {
-            ...record,
-            courseId: selectedCourse,
-            attendanceDate: selectedDate
-          });
+          console.log('Updating attendance record:', record.id, attendancePayload);
+          return attendanceService.update(record.id, attendancePayload);
         } else {
           // Otherwise create new record
-          return attendanceService.create({
-            ...record,
-            courseId: selectedCourse,
-            attendanceDate: selectedDate
-          });
+          console.log('Creating new attendance record:', attendancePayload);
+          return attendanceService.create(attendancePayload);
         }
       });
       
-      await Promise.all(promises);
+      const results = await Promise.all(promises);
+      console.log('Attendance update results:', results);
       
-      // Refresh attendance records
-      fetchAttendanceRecords();
+      // Update the attendance data with new IDs from created records
+      // but don't reload the full student list
+      const updatedAttendanceData = attendanceData.map((record, index) => {
+        if (!record.id && results[index]?.data?.id) {
+          return {
+            ...record,
+            id: results[index].data.id
+          };
+        }
+        return record;
+      });
+      
+      setAttendanceData(updatedAttendanceData);
+      
+      // Update attendance records display without reloading all student data
+      const start = new Date(selectedDate);
+      start.setHours(0, 0, 0, 0);
+      
+      const end = new Date(selectedDate);
+      end.setHours(23, 59, 59, 999);
+      
+      const updatedRecords = await attendanceService.getByDateRange(
+        start.toISOString(),
+        end.toISOString()
+      );
+      
+      const filteredRecords = updatedRecords.data.filter(record => 
+        record.courseId === selectedCourse
+      );
+      
+      setAttendanceRecords(filteredRecords);
       setLoading(false);
       
       // Show success message or handle UI feedback
@@ -325,14 +380,14 @@ const AttendanceManagement = () => {
                   <th className="px-4 py-3 text-left text-primary-100">Student</th>
                   <th className="px-4 py-3 text-left text-primary-100">Status</th>
                   <th className="px-4 py-3 text-left text-primary-100">Check-in Time</th>
-                  <th className="px-4 py-3 text-left text-primary-100">Location</th>
+                  <th className="px-4 py-3 text-left text-primary-100">Recorded By</th>
                   <th className="px-4 py-3 text-left text-primary-100">Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary-700">
                 {attendanceRecords.map((record) => (
                   <tr key={record.id} className="hover:bg-primary-700">
-                    <td className="px-4 py-3 text-primary-200">{record.userName}</td>
+                    <td className="px-4 py-3 text-primary-200">{record.studentName}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         record.status === 'PRESENT' ? 'bg-green-900 text-green-200' :
@@ -343,8 +398,8 @@ const AttendanceManagement = () => {
                         {record.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-primary-300">{formatDateTime(record.checkInTime)}</td>
-                    <td className="px-4 py-3 text-primary-300">{record.location}</td>
+                    <td className="px-4 py-3 text-primary-300">{formatDateTime(record.date)}</td>
+                    <td className="px-4 py-3 text-primary-300">{record.recordedByName || 'N/A'}</td>
                     <td className="px-4 py-3 text-primary-300">{record.remarks || 'N/A'}</td>
                   </tr>
                 ))}

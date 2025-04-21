@@ -61,7 +61,8 @@ export const courseService = {
   createCourse: (data) => api.post('/courses', data),
   updateCourse: (id, data) => api.put(`/courses/${id}`, data),
   enrollStudent: (courseId, studentId) => api.post(`/courses/${courseId}/students/${studentId}`),
-  unenrollStudent: (courseId, studentId) => api.delete(`/courses/${courseId}/students/${studentId}`)
+  unenrollStudent: (courseId, studentId) => api.delete(`/courses/${courseId}/students/${studentId}`),
+  getCoursesByStudent: (studentId) => api.get(`/courses/student/${studentId}`)
 };
 
 // Attendance services
@@ -134,6 +135,18 @@ export const facilityService = {
   book: (facilityId, data) => api.post(`/facilities/${facilityId}/bookings`, data),
   getBookings: (facilityId) => api.get(`/facilities/${facilityId}/bookings`),
   cancelBooking: (bookingId) => api.delete(`/facilities/bookings/${bookingId}`)
+};
+
+// Cafeteria services
+export const cafeteriaService = {
+  getAllItems: () => api.get('/cafeteria/items'),
+  getItemById: (id) => api.get(`/cafeteria/items/${id}`),
+  getItemsByCategory: (category) => api.get(`/cafeteria/items/category/${category}`),
+  createOrder: (data) => api.post('/cafeteria/orders', data),
+  getOrdersByUser: (userId) => api.get(`/cafeteria/orders/user/${userId}`),
+  getOrderById: (id) => api.get(`/cafeteria/orders/${id}`),
+  getOrdersByStatus: (status) => api.get(`/cafeteria/orders/status/${status}`),
+  updateOrderStatus: (id, status) => api.put(`/cafeteria/orders/${id}/status?status=${status}`)
 };
 
 export default api; 

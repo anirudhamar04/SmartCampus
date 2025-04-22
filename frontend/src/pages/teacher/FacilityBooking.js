@@ -133,6 +133,12 @@ const FacilityBooking = () => {
   };
 
   const handleEdit = (booking) => {
+    // Check if current user is the one who booked the facility
+    if (booking.teacherId !== currentUser.id) {
+      setError("You don't have permission to edit this booking.");
+      return;
+    }
+    
     const facilityBooking = {
       facilityId: booking.facilityId,
       purpose: booking.purpose,
@@ -145,6 +151,28 @@ const FacilityBooking = () => {
     setFormData(facilityBooking);
     setSelectedBooking(booking);
     setEditMode(true);
+    setShowForm(true);
+    
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBookNow = (facilityId) => {
+    // Set up form for a quick booking starting in the next 30 minutes
+    const now = new Date();
+    const startTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
+    const endTime = new Date(startTime.getTime() + 60 * 60000); // 1 hour after start
+    
+    setFormData({
+      facilityId: facilityId,
+      purpose: 'Quick Booking',
+      date: formatDateForInput(now),
+      startTime: formatTimeForInput(startTime.toISOString()),
+      endTime: formatTimeForInput(endTime.toISOString()),
+      notes: ''
+    });
+    
+    setEditMode(false);
     setShowForm(true);
     
     // Scroll to form
@@ -257,7 +285,10 @@ const FacilityBooking = () => {
     const bookingDate = new Date(booking.date);
     const startTime = new Date(`${booking.date}T${booking.startTime}`);
     
-    return bookingDate >= new Date(now.toDateString()) && now < startTime;
+    // Check if booking is in the future and belongs to current user
+    return booking.teacherId === currentUser.id && 
+           bookingDate >= new Date(now.toDateString()) && 
+           now < startTime;
   };
 
   return (
@@ -422,6 +453,39 @@ const FacilityBooking = () => {
           </form>
         </div>
       )}
+
+      {/* Available Facilities section */}
+      <div className="bg-primary-800 rounded-lg overflow-hidden">
+        <div className="p-4 border-b border-primary-700">
+          <h2 className="text-lg font-semibold text-primary-100">Available Facilities</h2>
+        </div>
+        
+        {facilities.length === 0 ? (
+          <div className="p-6 text-center text-primary-300">Loading facilities...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            {facilities.map(facility => (
+              <div key={facility.id} className="bg-primary-750 rounded-lg p-4 flex flex-col">
+                <h3 className="text-lg font-medium text-primary-100">{facility.name}</h3>
+                <p className="text-sm text-primary-300 mb-2">{facility.type}</p>
+                <p className="text-sm text-primary-300 mb-2">Capacity: {facility.capacity}</p>
+                <p className="text-sm text-primary-300 mb-2">Location: {facility.location}</p>
+                <p className="text-sm text-primary-300 mb-2">
+                  Hours: {facility.openingTime ? `${facility.openingTime} - ${facility.closingTime}` : 'Not specified'}
+                </p>
+                <div className="mt-auto pt-2">
+                  <button 
+                    onClick={() => handleBookNow(facility.id)}
+                    className="w-full btn btn-primary"
+                  >
+                    Book Now
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Bookings list */}
       <div className="bg-primary-800 rounded-lg overflow-hidden">

@@ -27,6 +27,7 @@ import FacilityBooking from './pages/teacher/FacilityBooking';
 // Student Pages
 import StudentDashboard from './pages/student/Dashboard';
 import CourseResources from './pages/student/CourseResources';
+import StudentAttendance from './pages/student/Attendance';
 
 // Error Pages
 import NotFound from './pages/NotFound';
@@ -92,6 +93,7 @@ const App = () => {
       }>
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/student/courses/:courseId/resources" element={<CourseResources />} />
+        <Route path="/student/attendance" element={<StudentAttendance />} />
       </Route>
       
       {/* Error Routes */}

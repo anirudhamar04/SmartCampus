@@ -1,6 +1,7 @@
 package com.smartcampus.controller;
 
 import com.smartcampus.dto.CourseResourceDTO;
+import com.smartcampus.dto.CourseDTO;
 import com.smartcampus.service.CourseResourceService;
 import com.smartcampus.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/course-resources")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3000", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}, allowedHeaders = "*", allowCredentials = "true")
 public class CourseResourceController {
 
     private final CourseResourceService courseResourceService;
@@ -34,7 +35,7 @@ public class CourseResourceController {
             @RequestParam("description") String description,
             @RequestParam("resourceType") String resourceType,
             @RequestParam("uploadedById") Long uploadedById,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam(value = "file", required = false) MultipartFile file) {
         
         CourseResourceDTO resource = courseResourceService.addResourceToCourse(
                 courseId, title, description, resourceType, uploadedById, file);
@@ -92,11 +93,29 @@ public class CourseResourceController {
         CourseResourceDTO resource = courseResourceService.getCourseResourceById(resourceId);
         byte[] fileContent = courseResourceService.downloadResource(resourceId);
         
-        String filename = resource.getFilePath().substring(resource.getFilePath().lastIndexOf('/') + 1);
-        
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", filename);
+        
+        // Handle different types of resources
+        if (resource.getFilePath() != null) {
+            if (resource.getFilePath().startsWith("LINK:")) {
+                // For links, set content type to text/plain
+                headers.setContentType(MediaType.TEXT_PLAIN);
+                headers.setContentDispositionFormData("attachment", "link.txt");
+            } else if (resource.getFilePath().equals("NO_FILE")) {
+                // For resources without files, return empty content
+                headers.setContentType(MediaType.TEXT_PLAIN);
+                headers.setContentDispositionFormData("attachment", "no_content.txt");
+            } else {
+                // For regular files, extract filename and set appropriate headers
+                String filename = resource.getFilePath().substring(resource.getFilePath().lastIndexOf('/') + 1);
+                headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+                headers.setContentDispositionFormData("attachment", filename);
+            }
+        } else {
+            // Default if filepath is null
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "resource_" + resourceId);
+        }
         
         return new ResponseEntity<>(fileContent, headers, HttpStatus.OK);
     }

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import jwtDecode from 'jwt-decode';
-import { authService } from '../services/api';
+import { authService, refreshAuthToken } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -24,26 +24,36 @@ export const AuthProvider = ({ children }) => {
           
           if (decodedToken.exp < currentTime) {
             // Token expired
+            console.log('Token expired, logging out');
             logout();
           } else {
             // Set auth headers for all axios requests
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            // Refresh auth token in API service
+            refreshAuthToken();
             
             // Fetch current user details
             try {
               const response = await authService.getCurrentUser();
+              console.log('Current user fetched successfully', response.data);
               setCurrentUser(response.data);
               setUserRole(response.data.role);
               setIsAuthenticated(true);
             } catch (error) {
               console.error('Failed to fetch user details:', error);
-              logout();
+              // Check if this is an auth error and logout if needed
+              if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                console.log('Authentication error when fetching user, logging out');
+                logout();
+              }
             }
           }
         } catch (error) {
           console.error('Invalid token:', error);
           logout();
         }
+      } else {
+        console.log('No token found in storage');
       }
       setLoading(false);
     };
@@ -57,7 +67,13 @@ export const AuthProvider = ({ children }) => {
       const { token } = response.data;
       
       localStorage.setItem('token', token);
+      
+      // Make sure to set token state AFTER localStorage is updated
       setToken(token);
+      console.log('Login successful, token saved');
+      
+      // Refresh auth token in API service
+      refreshAuthToken();
       
       // Get user details right after login
       let userResponse = null;
@@ -71,6 +87,7 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true, role: userResponse?.data?.role };
     } catch (error) {
+      console.error('Login failed:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Login failed'

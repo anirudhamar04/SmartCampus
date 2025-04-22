@@ -1,43 +1,20 @@
-package com.smartcampus.model;
+package com.smartcampus.dto;
 
-import jakarta.persistence.*;
 import java.time.LocalTime;
 
-@Entity
-@Table(name = "facilities")
-public class Facility {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class FacilityDTO {
     private Long id;
-
-    @Column(nullable = false)
     private String name;
-
-    @Column(nullable = false)
     private String description;
-
-    @Column(nullable = false)
     private String location;
-
-    @Column(nullable = false)
-    private String type; // CLASSROOM, LAB, LIBRARY, SPORTS, OTHER
-
-    @Column(nullable = false)
+    private String type;
     private Integer capacity;
-
-    @Column(nullable = false)
-    private boolean available = true;
-
+    private boolean available;
     private LocalTime openingTime;
-
     private LocalTime closingTime;
-
     private String imageUrl;
-
     private String amenities;
-
-    @Column(nullable = false)
-    private String status; // AVAILABLE, UNDER_MAINTENANCE, CLOSED
+    private String status;
 
     // Getters and Setters
     public Long getId() {
@@ -135,4 +112,4 @@ public class Facility {
     public void setStatus(String status) {
         this.status = status;
     }
-} 
+}

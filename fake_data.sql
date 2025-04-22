@@ -72,12 +72,12 @@ VALUES
 -- Link courses to teachers
 INSERT INTO course_teachers (course_id, teacher_id)
 VALUES 
-(1, 3), -- CS101 taught by Jennifer Hopkins
-(2, 4), -- CS102 taught by David Martinez
-(3, 5), -- MATH101 taught by Sarah Johnson
-(4, 6), -- PHYS201 taught by Robert Wilson
-(5, 7), -- ENG101 taught by Michael Chen
-(6, 3); -- PSYCH101 taught by Jennifer Hopkins
+(1, 21), -- CS101 taught by Jennifer Hopkins
+(2, 21), -- CS102 taught by David Martinez
+(3, 21), -- MATH101 taught by Sarah Johnson
+(4, 21), -- PHYS201 taught by Robert Wilson
+(5, 21), -- ENG101 taught by Michael Chen
+(6, 21); -- PSYCH101 taught by Jennifer Hopkins
 
 -- Enroll students in courses
 INSERT INTO course_enrollments (course_id, student_id)

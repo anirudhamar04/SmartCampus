@@ -114,23 +114,35 @@ const NotificationBell = () => {
                     <div className="flex-1">
                       <p className="font-medium text-primary-200">{notification.title}</p>
                       <p className="text-sm text-primary-400 line-clamp-2">{notification.message}</p>
+                      {notification.senderName && (
+                        <p className="text-xs text-primary-500">
+                          From: {notification.senderName}
+                        </p>
+                      )}
                       <p className="text-xs text-primary-500 mt-1">
                         {formatTimeAgo(notification.createdAt)}
                       </p>
                     </div>
-                    {notification.priority && (
-                      <span
-                        className={`text-xs px-2 py-1 rounded ml-2 ${
-                          notification.priority === 'HIGH'
-                            ? 'bg-red-900 text-red-200'
-                            : notification.priority === 'MEDIUM'
-                            ? 'bg-yellow-900 text-yellow-200'
-                            : 'bg-blue-900 text-blue-200'
-                        }`}
-                      >
-                        {notification.priority}
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end space-y-1">
+                      {notification.priority && (
+                        <span
+                          className={`text-xs px-2 py-1 rounded ml-2 ${
+                            notification.priority === 'HIGH' || notification.priority === 'URGENT'
+                              ? 'bg-red-900 text-red-200'
+                              : notification.priority === 'NORMAL'
+                              ? 'bg-yellow-900 text-yellow-200'
+                              : 'bg-blue-900 text-blue-200'
+                          }`}
+                        >
+                          {notification.priority}
+                        </span>
+                      )}
+                      {notification.type && (
+                        <span className="text-xs text-primary-400">
+                          {notification.type}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </li>
               ))}

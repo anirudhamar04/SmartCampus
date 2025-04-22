@@ -18,4 +18,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByPriority(String priority);
     List<Notification> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
     List<Notification> findByRecipientAndCreatedAtAfter(User recipient, LocalDateTime date);
+    List<Notification> findBySenderOrderByCreatedAtDesc(User sender);
+    long countByRecipientAndReadFalse(User recipient);
+    long countByReadFalse();
 } 

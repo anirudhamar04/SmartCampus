@@ -32,7 +32,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log all errors for debugging
+    console.error('API Error:', error.response?.status, error.response?.data);
+    
     if (error.response && error.response.status === 401) {
+      console.log('Unauthorized access detected - clearing token');
       // Unauthorized - clear token and redirect to login
       localStorage.removeItem('token');
       window.location.href = '/login';
@@ -40,6 +44,18 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Force token refresh - call this when initializing app
+export const refreshAuthToken = () => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    console.log('Setting default auth headers with stored token');
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    console.log('No token found in localStorage');
+  }
+};
 
 // User services
 export const userService = {
@@ -62,13 +78,20 @@ export const authService = {
 export const courseService = {
   getAll: () => api.get('/courses'),
   getById: (id) => api.get(`/courses/${id}`),
-  getMyCourses: () => api.get('/courses/my-courses'),
+  getMyCourses: () => {
+    // Ensure token is set for this specific request
+    const token = localStorage.getItem('token');
+    return api.get('/courses/my-courses', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+  },
   getStudentsByCourse: (courseId) => api.get(`/courses/${courseId}/students`),
   createCourse: (data) => api.post('/courses', data),
   updateCourse: (id, data) => api.put(`/courses/${id}`, data),
   enrollStudent: (courseId, studentId) => api.post(`/courses/${courseId}/students/${studentId}`),
   unenrollStudent: (courseId, studentId) => api.delete(`/courses/${courseId}/students/${studentId}`),
-  getCoursesByStudent: (studentId) => api.get(`/courses/student/${studentId}`)
+  getCoursesByStudent: (studentId) => api.get(`/courses/student/${studentId}`),
+  getByTeacher: (teacherId) => api.get(`/courses/teacher/${teacherId}`)
 };
 
 // Attendance services
@@ -78,7 +101,11 @@ export const attendanceService = {
   getByUser: (userId) => api.get(`/attendance/user/${userId}`),
   getByDateRange: (start, end) => api.get(`/attendance/date-range?start=${start}&end=${end}`),
   create: (data) => api.post('/attendance', data),
-  update: (id, data) => api.put(`/attendance/${id}`, data)
+  update: (id, data) => api.put(`/attendance/${id}`, data),
+  getCourseAttendancePercentage: (studentId, courseId) => 
+    api.get(`/attendance/student/${studentId}/course/${courseId}/percentage`),
+  getOverallAttendancePercentage: (studentId) => 
+    api.get(`/attendance/student/${studentId}/overall-percentage`)
 };
 
 // Feedback services
@@ -127,8 +154,24 @@ export const resourceService = {
   getByCourse: (courseId) => api.get(`/course-resources/course/${courseId}`),
   getByTeacher: (teacherId) => api.get(`/course-resources/teacher/${teacherId}`),
   getResourceTypes: () => api.get('/course-resources/resource-types'),
-  create: (data) => api.post('/course-resources', data),
-  update: (id, data) => api.put(`/course-resources/${id}`, data),
+  create: (data) => {
+    // Special handling for FormData
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Authorization': token ? `Bearer ${token}` : '',
+      // Do NOT set Content-Type here - it will be automatically set to multipart/form-data with boundary
+    };
+    return axios.post(`${api.defaults.baseURL}/course-resources`, data, { headers });
+  },
+  update: (id, data) => {
+    // Special handling for FormData
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Authorization': token ? `Bearer ${token}` : '',
+      // Do NOT set Content-Type here - it will be automatically set to multipart/form-data with boundary
+    };
+    return axios.put(`${api.defaults.baseURL}/course-resources/${id}`, data, { headers });
+  },
   delete: (id) => api.delete(`/course-resources/${id}`),
   download: (id) => api.get(`/course-resources/download/${id}`, { responseType: 'blob' }),
   getByType: (courseId, resourceType) => api.get(`/course-resources/course/${courseId}/type/${resourceType}`),
@@ -138,6 +181,7 @@ export const resourceService = {
 // Facility services
 export const facilityService = {
   getAll: () => api.get('/facilities'),
+  getAllFacilities: () => api.get('/facilities'),
   getById: (id) => api.get(`/facilities/${id}`),
   getByType: (type) => api.get(`/facilities/type/${type}`),
   getAvailable: () => api.get('/facilities/available'),
@@ -145,6 +189,10 @@ export const facilityService = {
   update: (id, data) => api.put(`/facilities/${id}`, data),
   book: (facilityId, data) => api.post(`/facilities/${facilityId}/bookings`, data),
   getBookings: (facilityId) => api.get(`/facilities/${facilityId}/bookings`),
+  getMyBookings: (userId) => api.get(`/facility-bookings/teacher/${userId}`),
+  createBooking: (data) => api.post('/facility-bookings', data),
+  updateBooking: (id, data) => api.put(`/facility-bookings/${id}`, data),
+  deleteBooking: (id) => api.delete(`/facility-bookings/${id}`),
   cancelBooking: (bookingId) => api.delete(`/facilities/bookings/${bookingId}`)
 };
 

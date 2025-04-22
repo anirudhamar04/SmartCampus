@@ -6,6 +6,8 @@ public class NotificationDTO {
     private Long id;
     private Long recipientId;
     private String recipientName;
+    private Long senderId;
+    private String senderName;
     private String title;
     private String message;
     private String type; // SYSTEM, EVENT, ATTENDANCE, FEEDBACK, etc.
@@ -43,6 +45,22 @@ public class NotificationDTO {
 
     public void setRecipientName(String recipientName) {
         this.recipientName = recipientName;
+    }
+    
+    public Long getSenderId() {
+        return senderId;
+    }
+
+    public void setSenderId(Long senderId) {
+        this.senderId = senderId;
+    }
+
+    public String getSenderName() {
+        return senderName;
+    }
+
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
     }
 
     public String getTitle() {
@@ -107,5 +125,53 @@ public class NotificationDTO {
 
     public void setActionUrl(String actionUrl) {
         this.actionUrl = actionUrl;
+    }
+    
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public LocalDateTime getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(LocalDateTime expiryDate) {
+        this.expiryDate = expiryDate;
+    }
+
+    public String getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(String metadata) {
+        this.metadata = metadata;
     }
 } 

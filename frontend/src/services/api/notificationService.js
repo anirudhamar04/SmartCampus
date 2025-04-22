@@ -16,6 +16,11 @@ const notificationService = {
     return axios.get(`/api/notifications/sent/${userId}`);
   },
 
+  // Get unread notifications
+  getUnread: (userId) => {
+    return axios.get(`/api/notifications/user/${userId}/unread`);
+  },
+
   // Get unread notifications count
   getUnreadCount: (userId) => {
     return axios.get(`/api/notifications/user/${userId}/unread/count`);

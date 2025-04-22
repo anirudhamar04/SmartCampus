@@ -4,6 +4,7 @@ import com.smartcampus.dto.CourseResourceDTO;
 import com.smartcampus.model.Course;
 import com.smartcampus.model.CourseResource;
 import com.smartcampus.model.Resource;
+import com.smartcampus.model.ResourceType;
 import com.smartcampus.model.User;
 import com.smartcampus.repository.CourseRepository;
 import com.smartcampus.repository.CourseResourceRepository;
@@ -25,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class CourseResourceServiceImpl implements CourseResourceService {
@@ -70,22 +72,33 @@ public class CourseResourceServiceImpl implements CourseResourceService {
         
         Resource savedResource = resourceRepository.save(resource);
         
-        // Save file to the server
-        String courseCode = course.getCourseCode();
-        String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-        String directoryPath = uploadDirectory + "/" + courseCode;
-        String filePath = directoryPath + "/" + fileName;
+        // File path for the resource
+        String filePath = null;
         
-        File directory = new File(directoryPath);
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-        
-        try {
-            Path path = Paths.get(filePath);
-            Files.write(path, file.getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to save file: " + e.getMessage());
+        // Save file to the server if provided
+        if (file != null && !file.isEmpty()) {
+            String courseCode = course.getCourseCode();
+            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            String directoryPath = uploadDirectory + "/" + courseCode;
+            filePath = directoryPath + "/" + fileName;
+            
+            File directory = new File(directoryPath);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+            
+            try {
+                Path path = Paths.get(filePath);
+                Files.write(path, file.getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to save file: " + e.getMessage());
+            }
+        } else if (resourceType.equals("LINK")) {
+            // For links, we don't need a physical file
+            filePath = "LINK:" + description;
+        } else {
+            // For other types without files, set a placeholder
+            filePath = "NO_FILE";
         }
         
         // Create a new course resource
@@ -209,17 +222,33 @@ public class CourseResourceServiceImpl implements CourseResourceService {
         CourseResource courseResource = courseResourceRepository.findById(resourceId)
                 .orElseThrow(() -> new RuntimeException("Course resource not found with id: " + resourceId));
         
-        try {
-            Path filePath = Paths.get(courseResource.getFilePath());
-            return Files.readAllBytes(filePath);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read file: " + e.getMessage());
+        String filePath = courseResource.getFilePath();
+        
+        // Handle different resource types
+        if (filePath.startsWith("LINK:")) {
+            // For links, return the URL as bytes
+            String url = filePath.substring(5); // Skip "LINK:"
+            return url.getBytes();
+        } else if (filePath.equals("NO_FILE")) {
+            // For resources without files, return empty array
+            return new byte[0];
+        } else {
+            // For regular files, read from disk
+            try {
+                Path path = Paths.get(filePath);
+                return Files.readAllBytes(path);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read file: " + e.getMessage());
+            }
         }
     }
     
     @Override
     public List<String> getResourceTypes() {
-        return Arrays.asList("LECTURE_NOTES", "ASSIGNMENT", "SYLLABUS", "READING", "VIDEO", "EXERCISE", "OTHER");
+        // Return resource types that match the frontend's expectations
+        return Stream.of(ResourceType.values())
+                .map(ResourceType::name)
+                .collect(Collectors.toList());
     }
     
     @Override

@@ -32,16 +32,23 @@ const NotificationManagement = () => {
       let response;
       
       if (activeTab === 'sent') {
-        // This endpoint would need to be implemented in the backend
-        response = await notificationService.getAll();
-        // Filter for notifications created by the current user
-        const sentNotifications = response.data.filter(
-          notification => notification.createdById === currentUser.id
-        );
-        setNotifications(sentNotifications);
+        // Fallback if getSentByUser is not available
+        try {
+          response = await notificationService.getSentByUser(currentUser.id);
+        } catch (error) {
+          console.log('Fallback: Using getAll since getSentByUser is not available', error);
+          // Fallback to getAll and filter client-side
+          response = await notificationService.getAll();
+          if (response.data) {
+            response.data = response.data.filter(notification => 
+              notification.senderId === currentUser.id
+            );
+          }
+        }
+        setNotifications(response.data || []);
       } else {
         response = await notificationService.getByUser(currentUser.id);
-        setNotifications(response.data);
+        setNotifications(response.data || []);
       }
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -107,9 +114,10 @@ const NotificationManagement = () => {
           title: formData.title,
           message: formData.message,
           recipientId: recipientId,
+          senderId: currentUser.id,
           type: formData.type,
           priority: formData.priority,
-          // Add action URL if needed
+          status: 'ACTIVE',
           actionUrl: formData.actionUrl || null
         })
       );

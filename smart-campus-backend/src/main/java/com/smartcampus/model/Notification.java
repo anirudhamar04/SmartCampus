@@ -14,6 +14,10 @@ public class Notification {
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;
 
+    @ManyToOne
+    @JoinColumn(name = "sender_id")
+    private User sender;
+
     @Column(nullable = false)
     private String title;
 
@@ -35,6 +39,19 @@ public class Notification {
 
     private String actionUrl;
 
+    private String status; // ACTIVE, ARCHIVED
+
+    private String icon;
+
+    private String category;
+
+    private String source;
+
+    private LocalDateTime expiryDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String metadata;
+
     public Long getId() {
         return id;
     }
@@ -49,6 +66,14 @@ public class Notification {
 
     public void setRecipient(User recipient) {
         this.recipient = recipient;
+    }
+
+    public User getSender() {
+        return sender;
+    }
+
+    public void setSender(User sender) {
+        this.sender = sender;
     }
 
     public String getTitle() {
@@ -113,5 +138,53 @@ public class Notification {
 
     public void setActionUrl(String actionUrl) {
         this.actionUrl = actionUrl;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public LocalDateTime getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(LocalDateTime expiryDate) {
+        this.expiryDate = expiryDate;
+    }
+
+    public String getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(String metadata) {
+        this.metadata = metadata;
     }
 } 

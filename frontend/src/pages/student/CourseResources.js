@@ -17,11 +17,16 @@ import {
   Chip,
   Divider,
   Alert,
-  Snackbar
+  Snackbar,
+  Badge
 } from '@mui/material';
-import { Download as DownloadIcon, Description as DescriptionIcon } from '@mui/icons-material';
-import { resourceService } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
+import { 
+  Download as DownloadIcon, 
+  Description as DescriptionIcon, 
+  Notifications as NotificationsIcon
+} from '@mui/icons-material';
+import { resourceService, notificationService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { useParams } from 'react-router-dom';
 
 const CourseResources = () => {
@@ -33,9 +38,22 @@ const CourseResources = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('info');
+  const [notifications, setNotifications] = useState([]);
   
   const { currentUser } = useAuth();
   const { courseId } = useParams();
+
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    if (!currentUser?.id) return;
+    
+    try {
+      const response = await notificationService.getUnread(currentUser.id);
+      setNotifications(response.data || []);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  }, [currentUser]);
 
   // Fetch resources based on filters
   const fetchResources = useCallback(async () => {
@@ -70,7 +88,7 @@ const CourseResources = () => {
   };
 
   // Handle resource download
-  const handleDownload = async (resourceId) => {
+  const handleDownload = async (resourceId, resourceTitle) => {
     try {
       const response = await resourceService.download(resourceId);
       
@@ -99,7 +117,10 @@ const CourseResources = () => {
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      showSnackbar('Resource downloaded successfully', 'success');
+      showSnackbar(`Resource "${resourceTitle}" downloaded successfully`, 'success');
+      
+      // Refresh notifications after download
+      fetchNotifications();
     } catch (err) {
       console.error('Error downloading resource:', err);
       showSnackbar('Failed to download resource', 'error');
@@ -115,7 +136,8 @@ const CourseResources = () => {
   useEffect(() => {
     fetchResources();
     fetchResourceTypes();
-  }, [fetchResources]);
+    fetchNotifications();
+  }, [fetchResources, fetchNotifications]);
 
   const getResourceIcon = (type) => {
     return <DescriptionIcon />;
@@ -129,12 +151,28 @@ const CourseResources = () => {
     });
   };
 
+  // Find course resource notifications
+  const getResourceNotifications = () => {
+    return notifications.filter(n => 
+      n.category === 'RESOURCE' && 
+      n.metadata && 
+      n.metadata.courseId === courseId);
+  };
+
+  const resourceNotifications = getResourceNotifications();
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Course Resources
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" component="h1">
+            Course Resources
+          </Typography>
+          
+          <Badge badgeContent={resourceNotifications.length} color="error">
+            <NotificationsIcon color="action" />
+          </Badge>
+        </Box>
         
         <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
           <FormControl variant="outlined" sx={{ minWidth: 200 }}>
@@ -198,7 +236,7 @@ const CourseResources = () => {
                   <CardActions>
                     <Button 
                       startIcon={<DownloadIcon />}
-                      onClick={() => handleDownload(resource.id)}
+                      onClick={() => handleDownload(resource.id, resource.title)}
                       variant="contained"
                       size="small"
                       fullWidth

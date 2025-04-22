@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
@@ -108,5 +109,53 @@ public class AttendanceController {
             @RequestParam Long teacherId) {
         attendanceService.bulkCreateAttendance(courseId, studentIds, status, remarks, teacherId);
         return ResponseEntity.ok().build();
+    }
+
+    // Get attendance percentage for a student in a course
+    @GetMapping("/student/{studentId}/course/{courseId}/percentage")
+    public ResponseEntity<Map<String, Object>> getAttendancePercentage(
+            @PathVariable Long studentId,
+            @PathVariable Long courseId) {
+        List<AttendanceDTO> attendanceList = attendanceService.getAttendanceByStudentAndCourse(studentId, courseId);
+        
+        int totalClasses = attendanceList.size();
+        long presentCount = attendanceList.stream()
+                .filter(a -> "PRESENT".equalsIgnoreCase(a.getStatus()))
+                .count();
+        
+        double percentage = totalClasses > 0 ? ((double) presentCount / totalClasses) * 100 : 0;
+        
+        Map<String, Object> response = Map.of(
+                "studentId", studentId,
+                "courseId", courseId,
+                "totalClasses", totalClasses,
+                "attendedClasses", presentCount,
+                "percentage", Math.round(percentage * 100.0) / 100.0 // Round to 2 decimal places
+        );
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    // Get overall attendance percentage for a student across all courses
+    @GetMapping("/student/{studentId}/overall-percentage")
+    public ResponseEntity<Map<String, Object>> getOverallAttendancePercentage(
+            @PathVariable Long studentId) {
+        List<AttendanceDTO> attendanceList = attendanceService.getAttendanceByStudent(studentId);
+        
+        int totalClasses = attendanceList.size();
+        long presentCount = attendanceList.stream()
+                .filter(a -> "PRESENT".equalsIgnoreCase(a.getStatus()))
+                .count();
+        
+        double percentage = totalClasses > 0 ? ((double) presentCount / totalClasses) * 100 : 0;
+        
+        Map<String, Object> response = Map.of(
+                "studentId", studentId,
+                "totalClasses", totalClasses,
+                "attendedClasses", presentCount,
+                "percentage", Math.round(percentage * 100.0) / 100.0 // Round to 2 decimal places
+        );
+        
+        return ResponseEntity.ok(response);
     }
 } 

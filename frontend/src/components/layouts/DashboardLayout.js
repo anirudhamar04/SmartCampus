@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../NotificationBell';
 
 // Icons (you would normally import from @heroicons/react)
 const HomeIcon = () => (
@@ -169,7 +170,9 @@ const DashboardLayout = () => {
           >
             <MenuIcon />
           </button>
-          <div className="ml-auto flex items-center space-x-2">
+          <div className="ml-auto flex items-center space-x-4">
+            {/* Only show notification bell for teachers/faculty */}
+            {userRole === 'FACULTY' && <NotificationBell />}
             <span className="text-primary-300">
               {currentUser?.fullName || currentUser?.email}
               {userRole && ` (${userRole})`}

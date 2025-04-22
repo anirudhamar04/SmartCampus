@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}, allowedHeaders = "*", allowCredentials = "true")
 @RequestMapping("/api/feedback")
 public class FeedbackController {
 
@@ -57,6 +58,12 @@ public class FeedbackController {
     @GetMapping("/category/{category}")
     public ResponseEntity<List<FeedbackDTO>> getFeedbackByCategory(@PathVariable String category) {
         return ResponseEntity.ok(feedbackService.getFeedbackByCategory(category));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<FeedbackDTO>> getAllFeedback() {
+        List<FeedbackDTO> feedbacks = feedbackService.getAllFeedback();
+        return ResponseEntity.ok(feedbacks);
     }
 
     @PutMapping("/{id}/status")

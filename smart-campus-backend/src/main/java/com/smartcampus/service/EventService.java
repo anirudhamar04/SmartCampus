@@ -14,4 +14,5 @@ public interface EventService {
     EventDTO unregisterFromEvent(Long eventId, Long userId);
     List<EventDTO> getEventsByOrganizer(Long organizerId);
     List<EventDTO> getEventsByDateRange(LocalDateTime start, LocalDateTime end);
+    void deleteEvent(Long id);
 } 

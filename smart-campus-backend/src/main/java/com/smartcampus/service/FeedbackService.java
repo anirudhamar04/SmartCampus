@@ -130,6 +130,12 @@ public class FeedbackService {
                 .collect(Collectors.toList());
     }
 
+    public List<FeedbackDTO> getAllFeedback() {
+        return feedbackRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     private FeedbackDTO convertToDTO(Feedback feedback) {
         FeedbackDTO dto = new FeedbackDTO();
         dto.setId(feedback.getId());

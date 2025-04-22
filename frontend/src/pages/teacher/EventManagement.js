@@ -61,16 +61,58 @@ const EventManagement = () => {
     try {
       setLoading(true);
       
+      // Format dates in the exact format required by the API: "2025-04-20T00:00:00"
+      const formatStartDate = (dateStr) => {
+        if (!dateStr) return null;
+        // Set time to 00:00:00 for start date
+        const date = new Date(dateStr);
+        date.setHours(0, 0, 0, 0);
+        
+        // Format as YYYY-MM-DDT00:00:00 without timezone or milliseconds
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}T00:00:00`;
+      };
+      
+      const formatEndDate = (dateStr) => {
+        if (!dateStr) return null;
+        // Set time to 23:59:59 for end date
+        const date = new Date(dateStr);
+        date.setHours(23, 59, 59, 0);
+        
+        // Format as YYYY-MM-DDT23:59:59 without timezone or milliseconds
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}T23:59:59`;
+      };
+      
+      const startDateTime = formatStartDate(formData.startDate);
+      const endDateTime = formatEndDate(formData.endDate);
+      
+      // Map frontend fields to backend expected fields
+      const eventData = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        status: formData.status,
+        startTime: startDateTime,
+        endTime: endDateTime,
+        eventType: formData.category,
+        organizerId: currentUser.id
+      };
+      
+      console.log('Sending event data:', JSON.stringify(eventData, null, 2));
+      
       if (editMode && selectedEvent) {
-        await eventService.update(selectedEvent.id, {
-          ...formData,
-          organizerId: currentUser.id
-        });
+        console.log(`Updating event ${selectedEvent.id} with formatted dates:`, 
+                   `startTime=${eventData.startTime}, endTime=${eventData.endTime}`);
+        await eventService.update(selectedEvent.id, eventData);
       } else {
-        await eventService.create({
-          ...formData,
-          organizerId: currentUser.id
-        });
+        console.log(`Creating new event with formatted dates:`, 
+                   `startTime=${eventData.startTime}, endTime=${eventData.endTime}`);
+        await eventService.create(eventData);
       }
       
       // Reset form
@@ -111,13 +153,17 @@ const EventManagement = () => {
   };
 
   const handleEdit = (event) => {
+    // Map event data to form fields, handling both naming conventions
+    const startDate = event.startTime || event.startDate;
+    const endDate = event.endTime || event.endDate;
+    
     setFormData({
       title: event.title,
       description: event.description,
       location: event.location,
-      startDate: formatDateForInput(event.startDate),
-      endDate: formatDateForInput(event.endDate),
-      category: event.category,
+      startDate: formatDateForInput(startDate),
+      endDate: formatDateForInput(endDate),
+      category: event.eventType || event.category,
       status: event.status
     });
     
@@ -402,18 +448,18 @@ const EventManagement = () => {
                       <div className="text-sm font-medium text-primary-200">{event.title}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getCategoryBadgeClass(event.category)}`}>
-                        {event.category}
+                      <span className={`px-2 py-1 text-xs rounded-full ${getCategoryBadgeClass(event.eventType || event.category)}`}>
+                        {event.eventType || event.category}
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-primary-300">{event.location}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-primary-300">{formatDateTime(event.startDate)}</div>
+                      <div className="text-sm text-primary-300">{formatDateTime(event.startTime || event.startDate)}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-primary-300">{formatDateTime(event.endDate)}</div>
+                      <div className="text-sm text-primary-300">{formatDateTime(event.endTime || event.endDate)}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(event.status)}`}>
@@ -447,4 +493,4 @@ const EventManagement = () => {
   );
 };
 
-export default EventManagement; 
+export default EventManagement;

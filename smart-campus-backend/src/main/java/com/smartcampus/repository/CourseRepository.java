@@ -15,4 +15,5 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Course> findByDepartment(String department);
     List<Course> findByCourseCodeContainingIgnoreCase(String courseCode);
     List<Course> findByNameContainingIgnoreCase(String name);
+    List<Course> findByAssignedTeachersContaining(User teacher);
 } 

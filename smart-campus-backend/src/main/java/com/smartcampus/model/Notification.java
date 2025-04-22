@@ -26,7 +26,7 @@ public class Notification {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column(name = "`read`", nullable = false)
     private boolean read;
 
     private LocalDateTime readAt;

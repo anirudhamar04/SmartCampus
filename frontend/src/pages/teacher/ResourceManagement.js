@@ -1,166 +1,204 @@
-import React, { useState, useEffect } from 'react';
-import { resourceService } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Typography, Box, Button, TextField, MenuItem, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, CircularProgress, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select } from '@mui/material';
+import { Add, Edit, Delete, Visibility, Download } from '@mui/icons-material';
+import { useAuth } from '../../contexts/AuthContext';
+import { resourceService, courseService } from '../../services/api';
 
 const ResourceManagement = () => {
-  const { currentUser } = useAuth();
+  // States for resources
   const [resources, setResources] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [success, setSuccess] = useState(null);
+
+  // States for form
+  const [openForm, setOpenForm] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
+  const [formMode, setFormMode] = useState('add'); // 'add' or 'edit'
   const [selectedResource, setSelectedResource] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    type: 'DOCUMENT',
-    subject: '',
-    grade: '',
-    fileUrl: '',
-    file: null,
-    isPublic: true
-  });
+  const [viewResource, setViewResource] = useState(null);
+  const [openView, setOpenView] = useState(false);
+  
+  // Form fields
+  const [title, setTitle] = useState('');
+  const [resourceType, setResourceType] = useState('');
+  const [courseId, setCourseId] = useState('');
+  const [file, setFile] = useState(null);
+  const [description, setDescription] = useState('');
+  const [resourceTypes, setResourceTypes] = useState([]);
+  const [courses, setCourses] = useState([]);
 
-  // Constants for dropdown options
-  const resourceTypes = ['DOCUMENT', 'VIDEO', 'PRESENTATION', 'LINK', 'IMAGE', 'AUDIO', 'OTHER'];
+  // State for dropdown filter by resource type
+  const [selectedResourceType, setSelectedResourceType] = useState('');
 
+  const { currentUser } = useAuth();
+
+  // Fetch resources and resource types on component mount
   useEffect(() => {
     fetchResources();
+    fetchResourceTypes();
+    fetchTeacherCourses();
   }, []);
 
-  const fetchResources = async () => {
+  // Fetch all resources
+  const fetchResources = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await resourceService.getAll();
+      let response;
+      if (selectedResourceType) {
+        response = await resourceService.getByType(courseId, selectedResourceType);
+      } else {
+        response = await resourceService.getByCourse(courseId);
+      }
       setResources(response.data);
     } catch (err) {
-      console.error('Failed to fetch resources:', err);
-      setError('Failed to fetch resources. Please try again later.');
+      console.error('Error fetching resources:', err);
+      setError('Failed to fetch resources');
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId, selectedResourceType]);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
-    
-    if (type === 'file') {
-      setFormData({
-        ...formData,
-        file: files[0]
-      });
-    } else if (type === 'checkbox') {
-      setFormData({
-        ...formData,
-        [name]: checked
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
+  // Fetch resource types
+  const fetchResourceTypes = async () => {
+    try {
+      const response = await resourceService.getResourceTypes();
+      setResourceTypes(response.data);
+    } catch (err) {
+      setError("Failed to load resource types: " + (err.response?.data?.message || err.message));
     }
   };
 
+  // Fetch teacher courses
+  const fetchTeacherCourses = async () => {
+    try {
+      const response = await courseService.getByTeacher(currentUser.id);
+      setCourses(response.data);
+    } catch (err) {
+      setError("Failed to load courses: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // Handle input change
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    switch (name) {
+      case 'title':
+        setTitle(value);
+        break;
+      case 'resourceType':
+        setResourceType(value);
+        break;
+      case 'courseId':
+        setCourseId(value);
+        break;
+      case 'description':
+        setDescription(value);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle file change
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  // Open add form
+  const handleAddClick = () => {
+    setFormTitle('Add New Resource');
+    setFormMode('add');
+    resetForm();
+    setOpenForm(true);
+  };
+
+  // Open edit form
+  const handleEditClick = (resource) => {
+    setFormTitle('Edit Resource');
+    setFormMode('edit');
+    setSelectedResource(resource);
+    
+    // Pre-fill form fields
+    setTitle(resource.title);
+    setResourceType(resource.resourceType);
+    setCourseId(resource.courseId);
+    setDescription(resource.description);
+    
+    setOpenForm(true);
+  };
+
+  // View resource details
+  const handleViewClick = (resource) => {
+    setViewResource(resource);
+    setOpenView(true);
+  };
+
+  // Reset form fields
+  const resetForm = () => {
+    setTitle('');
+    setResourceType('');
+    setCourseId('');
+    setFile(null);
+    setDescription('');
+    setSelectedResource(null);
+  };
+
+  // Submit form - Create or Update resource
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    
+    // Create form data for file upload
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('resourceType', resourceType);
+    formData.append('courseId', courseId);
+    formData.append('description', description);
+    
+    if (file) {
+      formData.append('file', file);
+    }
     
     try {
-      setLoading(true);
-      
-      // Create FormData object for file upload
-      const formDataToSend = new FormData();
-      
-      // Add all form fields to FormData
-      Object.keys(formData).forEach(key => {
-        if (key === 'file' && formData.file) {
-          formDataToSend.append('file', formData.file);
-        } else if (key !== 'file') {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
-      
-      // Add teacher ID
-      formDataToSend.append('teacherId', currentUser.id);
-      
-      if (editMode && selectedResource) {
-        await resourceService.update(selectedResource.id, formDataToSend);
+      if (formMode === 'add') {
+        await resourceService.create(formData);
+        setSuccess("Resource created successfully");
       } else {
-        await resourceService.create(formDataToSend);
+        await resourceService.update(selectedResource.id, formData);
+        setSuccess("Resource updated successfully");
       }
       
-      // Reset form
+      fetchResources();
+      setOpenForm(false);
       resetForm();
-      
-      // Refresh resources
-      fetchResources();
     } catch (err) {
-      console.error('Failed to save resource:', err);
-      setError(`Failed to ${editMode ? 'update' : 'create'} resource. Please try again later.`);
+      setError("Failed to save resource: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (resourceId) => {
-    if (!window.confirm('Are you sure you want to delete this resource?')) {
-      return;
-    }
-    
-    try {
+  // Delete resource
+  const handleDeleteClick = async (id) => {
+    if (window.confirm('Are you sure you want to delete this resource?')) {
       setLoading(true);
-      await resourceService.delete(resourceId);
-      
-      // Clear selected resource if it's the one being deleted
-      if (selectedResource?.id === resourceId) {
-        setSelectedResource(null);
+      try {
+        await resourceService.delete(id);
+        setSuccess("Resource deleted successfully");
+        fetchResources();
+      } catch (err) {
+        setError("Failed to delete resource: " + (err.response?.data?.message || err.message));
+      } finally {
+        setLoading(false);
       }
-      
-      // Refresh resources
-      fetchResources();
-    } catch (err) {
-      console.error('Failed to delete resource:', err);
-      setError('Failed to delete resource. Please try again later.');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleEdit = (resource) => {
-    setFormData({
-      title: resource.title,
-      description: resource.description,
-      type: resource.type,
-      subject: resource.subject || '',
-      grade: resource.grade || '',
-      fileUrl: resource.fileUrl || '',
-      file: null,
-      isPublic: resource.isPublic
-    });
-    
-    setSelectedResource(resource);
-    setEditMode(true);
-    setShowForm(true);
-    
-    // Scroll to form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      type: 'DOCUMENT',
-      subject: '',
-      grade: '',
-      fileUrl: '',
-      file: null,
-      isPublic: true
-    });
-    
-    setSelectedResource(null);
-    setEditMode(false);
-    setShowForm(false);
+  // Close alerts
+  const handleCloseAlert = () => {
+    setError(null);
+    setSuccess(null);
   };
 
   const formatDate = (dateString) => {
@@ -207,6 +245,41 @@ const ResourceManagement = () => {
     }
   };
 
+  // Handle resource download
+  const handleDownload = async (resourceId) => {
+    try {
+      const response = await resourceService.download(resourceId);
+      
+      // Create a blob from the response data
+      const blob = new Blob([response.data]);
+      
+      // Get the filename from the content-disposition header or use a default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'download';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch.length === 2) filename = filenameMatch[1];
+      }
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading resource:', err);
+      setError('Failed to download resource');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -217,19 +290,10 @@ const ResourceManagement = () => {
           </p>
         </div>
         <button
-          onClick={() => {
-            if (showForm && !editMode) {
-              resetForm();
-            } else {
-              setShowForm(!showForm);
-              setEditMode(false);
-              setSelectedResource(null);
-              resetForm();
-            }
-          }}
+          onClick={handleAddClick}
           className="btn btn-primary"
         >
-          {showForm && !editMode ? 'Cancel' : 'Upload Resource'}
+          Upload Resource
         </button>
       </div>
 
@@ -239,7 +303,7 @@ const ResourceManagement = () => {
           {error}
           <button 
             className="ml-2 text-red-200 hover:text-white" 
-            onClick={() => setError(null)}
+            onClick={handleCloseAlert}
           >
             ✕
           </button>
@@ -247,10 +311,10 @@ const ResourceManagement = () => {
       )}
 
       {/* Create/Edit resource form */}
-      {showForm && (
+      {openForm && (
         <div className="bg-primary-800 p-4 rounded-lg">
           <h2 className="text-lg font-semibold text-primary-100 mb-4">
-            {editMode ? 'Edit Resource' : 'Upload New Resource'}
+            {formTitle}
           </h2>
           <form onSubmit={handleSubmit} encType="multipart/form-data">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -262,7 +326,7 @@ const ResourceManagement = () => {
                   <input
                     type="text"
                     name="title"
-                    value={formData.title}
+                    value={title}
                     onChange={handleInputChange}
                     className="input w-full"
                     placeholder="Resource title"
@@ -275,8 +339,8 @@ const ResourceManagement = () => {
                     Type <span className="text-red-500">*</span>
                   </label>
                   <select
-                    name="type"
-                    value={formData.type}
+                    name="resourceType"
+                    value={resourceType}
                     onChange={handleInputChange}
                     className="input w-full"
                     required
@@ -289,115 +353,57 @@ const ResourceManagement = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-primary-300 mb-1">
-                    Subject
+                    Course
                   </label>
-                  <input
-                    type="text"
-                    name="subject"
-                    value={formData.subject}
+                  <select
+                    name="courseId"
+                    value={courseId}
                     onChange={handleInputChange}
                     className="input w-full"
-                    placeholder="Subject (e.g., Mathematics, Science)"
-                  />
+                  >
+                    {courses.map(course => (
+                      <option key={course.id} value={course.id}>{course.title}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-primary-300 mb-1">
-                    Grade
+                    Description <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="grade"
-                    value={formData.grade}
+                  <textarea
+                    name="description"
+                    value={description}
                     onChange={handleInputChange}
-                    className="input w-full"
-                    placeholder="Grade or class level"
-                  />
+                    className="input w-full h-24"
+                    placeholder="Resource description..."
+                    required
+                  ></textarea>
                 </div>
                 
-                {formData.type === 'LINK' ? (
-                  <div>
-                    <label className="block text-sm font-medium text-primary-300 mb-1">
-                      URL <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="url"
-                      name="fileUrl"
-                      value={formData.fileUrl}
-                      onChange={handleInputChange}
-                      className="input w-full"
-                      placeholder="https://example.com/resource"
-                      required={formData.type === 'LINK'}
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-primary-300 mb-1">
-                      File {!editMode && <span className="text-red-500">*</span>}
-                    </label>
-                    <input
-                      type="file"
-                      name="file"
-                      onChange={handleInputChange}
-                      className="w-full text-primary-300 py-2"
-                      required={!editMode && formData.type !== 'LINK'}
-                    />
-                    {editMode && (
-                      <p className="text-xs text-primary-400 mt-1">
-                        Leave empty to keep the current file
-                      </p>
-                    )}
-                  </div>
-                )}
-                
-                <div className="flex items-center mt-2">
-                  <input
-                    type="checkbox"
-                    name="isPublic"
-                    id="isPublic"
-                    checked={formData.isPublic}
-                    onChange={handleInputChange}
-                    className="form-checkbox h-4 w-4 text-primary-500"
-                  />
-                  <label htmlFor="isPublic" className="ml-2 text-sm text-primary-300">
-                    Make this resource visible to students
+                <div>
+                  <label className="block text-sm font-medium text-primary-300 mb-1">
+                    File
                   </label>
+                  <input
+                    type="file"
+                    name="file"
+                    onChange={handleFileChange}
+                    className="w-full text-primary-300 py-2"
+                  />
                 </div>
-              </div>
-              
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-primary-300 mb-1">
-                  Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="input w-full h-24"
-                  placeholder="Resource description..."
-                  required
-                ></textarea>
               </div>
             </div>
             
             <div className="mt-4 flex justify-end space-x-2">
-              {editMode && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="btn btn-secondary"
-                >
-                  Cancel
-                </button>
-              )}
               <button
                 type="submit"
                 className="btn btn-primary"
                 disabled={loading}
               >
-                {loading ? 'Saving...' : editMode ? 'Update Resource' : 'Upload Resource'}
+                {loading ? 'Saving...' : 'Save Resource'}
               </button>
             </div>
           </form>
@@ -421,10 +427,8 @@ const ResourceManagement = () => {
                 <tr className="bg-primary-700">
                   <th className="px-4 py-3 text-left text-xs font-medium text-primary-300 uppercase tracking-wider">Title</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-primary-300 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-primary-300 uppercase tracking-wider">Subject</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-primary-300 uppercase tracking-wider">Grade</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-primary-300 uppercase tracking-wider">Course</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-primary-300 uppercase tracking-wider">Uploaded</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-primary-300 uppercase tracking-wider">Visibility</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-primary-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -433,56 +437,41 @@ const ResourceManagement = () => {
                   <tr key={resource.id} className="hover:bg-primary-750">
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        {getResourceTypeIcon(resource.type)}
+                        {getResourceTypeIcon(resource.resourceType)}
                         <div className="ml-2 text-sm font-medium text-primary-200">{resource.title}</div>
                       </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getResourceTypeBadgeClass(resource.type)}`}>
-                        {resource.type}
+                      <span className={`px-2 py-1 text-xs rounded-full ${getResourceTypeBadgeClass(resource.resourceType)}`}>
+                        {resource.resourceType}
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-primary-300">{resource.subject || 'N/A'}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-primary-300">{resource.grade || 'N/A'}</div>
+                      <div className="text-sm text-primary-300">{resource.course?.title || 'N/A'}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-primary-300">{formatDate(resource.createdAt)}</div>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${resource.isPublic ? 'bg-green-900 text-green-200' : 'bg-gray-800 text-gray-300'}`}>
-                        {resource.isPublic ? 'Public' : 'Private'}
-                      </span>
-                    </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                      <a
-                        href={resource.fileUrl || '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-300 hover:text-primary-100 mr-3"
-                        onClick={(e) => {
-                          if (!resource.fileUrl) {
-                            e.preventDefault();
-                            alert('No file URL available');
-                          }
-                        }}
-                      >
-                        View
-                      </a>
                       <button
-                        onClick={() => handleEdit(resource)}
+                        onClick={() => handleEditClick(resource)}
                         className="text-primary-300 hover:text-primary-100 mr-3"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(resource.id)}
+                        onClick={() => handleDeleteClick(resource.id)}
                         className="text-red-400 hover:text-red-300"
                       >
                         Delete
                       </button>
+                      <IconButton 
+                        aria-label="download" 
+                        onClick={() => handleDownload(resource.id)}
+                        title="Download resource"
+                      >
+                        <Download />
+                      </IconButton>
                     </td>
                   </tr>
                 ))}
@@ -491,6 +480,25 @@ const ResourceManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Resource Type Filter dropdown */}
+      <FormControl variant="outlined" className={classes.formControl} style={{ marginLeft: '10px' }}>
+        <InputLabel>Filter by Type</InputLabel>
+        <Select
+          value={selectedResourceType}
+          onChange={(e) => setSelectedResourceType(e.target.value)}
+          label="Filter by Type"
+        >
+          <MenuItem value="">
+            <em>All Types</em>
+          </MenuItem>
+          {resourceTypes.map((type) => (
+            <MenuItem key={type} value={type}>
+              {type}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     </div>
   );
 };

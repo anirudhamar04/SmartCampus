@@ -9,6 +9,8 @@ public class EventDTO {
     private String description;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
     private String location;
     private Long organizerId;
     private String organizerName;
@@ -39,6 +41,14 @@ public class EventDTO {
 
     public LocalDateTime getEndTime() {
         return endTime;
+    }
+
+    public LocalDateTime getStartDate() {
+        return startDate;
+    }
+
+    public LocalDateTime getEndDate() {
+        return endDate;
     }
 
     public String getLocation() {
@@ -102,6 +112,14 @@ public class EventDTO {
         this.endTime = endTime;
     }
 
+    public void setStartDate(LocalDateTime startDate) {
+        this.startDate = startDate;
+    }
+
+    public void setEndDate(LocalDateTime endDate) {
+        this.endDate = endDate;
+    }
+
     public void setLocation(String location) {
         this.location = location;
     }
@@ -140,5 +158,22 @@ public class EventDTO {
 
     public void setEventType(String eventType) {
         this.eventType = eventType;
+    }
+
+    @Override
+    public String toString() {
+        return "EventDTO{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", description='" + description + '\'' +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                ", location='" + location + '\'' +
+                ", organizerId=" + organizerId +
+                ", status='" + status + '\'' +
+                ", eventType='" + eventType + '\'' +
+                '}';
     }
 }

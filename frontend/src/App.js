@@ -24,6 +24,10 @@ import EventManagement from './pages/teacher/EventManagement';
 import ResourceManagement from './pages/teacher/ResourceManagement';
 import FacilityBooking from './pages/teacher/FacilityBooking';
 
+// Student Pages
+import StudentDashboard from './pages/student/Dashboard';
+import CourseResources from './pages/student/CourseResources';
+
 // Error Pages
 import NotFound from './pages/NotFound';
 
@@ -78,6 +82,16 @@ const App = () => {
         <Route path="/teacher/events" element={<EventManagement />} />
         <Route path="/teacher/resources" element={<ResourceManagement />} />
         <Route path="/teacher/facilities" element={<FacilityBooking />} />
+      </Route>
+      
+      {/* Student Routes */}
+      <Route element={
+        <ProtectedRoute allowedRoles={['STUDENT']}>
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
+        <Route path="/student/courses/:courseId/resources" element={<CourseResources />} />
       </Route>
       
       {/* Error Routes */}

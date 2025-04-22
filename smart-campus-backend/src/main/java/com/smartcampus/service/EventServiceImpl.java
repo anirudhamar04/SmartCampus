@@ -56,8 +56,30 @@ public class EventServiceImpl implements EventService {
 
         event.setTitle(eventDTO.getTitle());
         event.setDescription(eventDTO.getDescription());
-        event.setStartTime(eventDTO.getStartTime());
-        event.setEndTime(eventDTO.getEndTime());
+        
+        // Handle possible field name differences from frontend
+        if (eventDTO.getStartTime() != null) {
+            event.setStartTime(eventDTO.getStartTime());
+        } else if (eventDTO.getStartDate() != null) {
+            event.setStartTime(eventDTO.getStartDate());
+        }
+        
+        if (eventDTO.getEndTime() != null) {
+            event.setEndTime(eventDTO.getEndTime());
+        } else if (eventDTO.getEndDate() != null) {
+            event.setEndTime(eventDTO.getEndDate());
+        }
+        
+        // Ensure we don't have null in required fields
+        if (event.getStartTime() == null) {
+            throw new IllegalArgumentException("Start time/date cannot be null");
+        }
+        
+        if (event.getEndTime() == null) {
+            // If we still don't have an end time, set it to start time + 1 hour as a default
+            event.setEndTime(event.getStartTime().plusHours(1));
+        }
+        
         event.setLocation(eventDTO.getLocation());
         event.setImageUrl(eventDTO.getImageUrl());
         event.setMaxParticipants(eventDTO.getMaxParticipants());
@@ -145,6 +167,15 @@ public class EventServiceImpl implements EventService {
         return eventRepository.findByStartTimeBetween(start, end).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteEvent(Long id) {
+        Event event = eventRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Event not found"));
+        
+        eventRepository.delete(event);
     }
 
     private EventDTO convertToDTO(Event event) {

@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/events")
 public class EventController {
 
@@ -30,6 +31,15 @@ public class EventController {
     public ResponseEntity<EventDTO> updateEvent(
             @PathVariable Long id,
             @RequestBody EventDTO eventDTO) {
+        // Debug logging
+        System.out.println("Received event update request for ID: " + id);
+        System.out.println("Event DTO: " + eventDTO);
+        System.out.println("Event title: " + eventDTO.getTitle());
+        System.out.println("Event startTime: " + eventDTO.getStartTime());
+        System.out.println("Event startDate: " + eventDTO.getStartDate());
+        System.out.println("Event endTime: " + eventDTO.getEndTime());
+        System.out.println("Event endDate: " + eventDTO.getEndDate());
+        
         EventDTO updatedEvent = eventService.updateEvent(id, eventDTO);
         return ResponseEntity.ok(updatedEvent);
     }
@@ -80,5 +90,11 @@ public class EventController {
             @RequestParam LocalDateTime end) {
         List<EventDTO> events = eventService.getEventsByDateRange(start, end);
         return ResponseEntity.ok(events);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+        eventService.deleteEvent(id);
+        return ResponseEntity.noContent().build();
     }
 } 

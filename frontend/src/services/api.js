@@ -15,6 +15,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    
+    // Log request data for debugging
+    if (config.method === 'post' || config.method === 'put') {
+      console.log(`API ${config.method.toUpperCase()} request to ${config.url}:`, config.data);
+    }
+    
     return config;
   },
   (error) => {
@@ -108,6 +114,7 @@ export const eventService = {
   getUpcoming: () => api.get('/events/upcoming'),
   create: (data) => api.post('/events', data),
   update: (id, data) => api.put(`/events/${id}`, data),
+  delete: (id) => api.delete(`/events/${id}`),
   registerParticipant: (eventId, userId) => api.post(`/events/${eventId}/participants/${userId}`),
   removeParticipant: (eventId, userId) => api.delete(`/events/${eventId}/participants/${userId}`),
   getParticipants: (eventId) => api.get(`/events/${eventId}/participants`)
@@ -115,13 +122,17 @@ export const eventService = {
 
 // Resource services
 export const resourceService = {
-  getAll: () => api.get('/resources'),
-  getById: (id) => api.get(`/resources/${id}`),
-  getByType: (type) => api.get(`/resources/type/${type}`),
-  getAvailable: () => api.get('/resources/available'),
-  create: (data) => api.post('/resources', data),
-  update: (id, data) => api.put(`/resources/${id}`, data),
-  share: (resourceId, userId) => api.post(`/resources/${resourceId}/share/${userId}`)
+  getAll: () => api.get('/course-resources/all'),
+  getById: (id) => api.get(`/course-resources/${id}`),
+  getByCourse: (courseId) => api.get(`/course-resources/course/${courseId}`),
+  getByTeacher: (teacherId) => api.get(`/course-resources/teacher/${teacherId}`),
+  getResourceTypes: () => api.get('/course-resources/resource-types'),
+  create: (data) => api.post('/course-resources', data),
+  update: (id, data) => api.put(`/course-resources/${id}`, data),
+  delete: (id) => api.delete(`/course-resources/${id}`),
+  download: (id) => api.get(`/course-resources/download/${id}`, { responseType: 'blob' }),
+  getByType: (courseId, resourceType) => api.get(`/course-resources/course/${courseId}/type/${resourceType}`),
+  getTeacherCourses: (teacherId) => api.get(`/course-resources/teacher/${teacherId}/courses`)
 };
 
 // Facility services

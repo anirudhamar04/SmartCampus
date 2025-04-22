@@ -228,4 +228,24 @@ public class CourseService {
         dto.setRole(user.getRole().toString());
         return dto;
     }
+
+    // Add new method to get courses assigned to a teacher
+    public List<Object> getTeacherCourses(Long teacherId) {
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found with id: " + teacherId));
+        
+        List<Course> courses = courseRepository.findByAssignedTeachersContaining(teacher);
+        
+        return courses.stream()
+                .map(course -> {
+                    Map<String, Object> courseMap = new HashMap<>();
+                    courseMap.put("id", course.getId());
+                    courseMap.put("name", course.getName());
+                    courseMap.put("courseCode", course.getCourseCode());
+                    courseMap.put("department", course.getDepartment());
+                    courseMap.put("semester", course.getSemester());
+                    return courseMap;
+                })
+                .collect(Collectors.toList());
+    }
 } 

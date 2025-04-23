@@ -104,6 +104,20 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
     
+    public List<CourseDTO> getCoursesByStudentUsername(String username) {
+        User student = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+        
+        // Verify the user is a student
+        if (student.getRole() != Role.STUDENT) {
+            throw new RuntimeException("User is not a student");
+        }
+        
+        return courseRepository.findByEnrolledStudents(student).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
     public Map<String, List<UserDTO>> getStudentsByCourseForFaculty(String username) {
         User faculty = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Faculty not found"));

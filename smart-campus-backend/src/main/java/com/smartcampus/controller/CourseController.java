@@ -66,12 +66,22 @@ public class CourseController {
 
     // Get courses for the currently logged-in faculty member
     @GetMapping("/my-courses")
-    @PreAuthorize("hasRole('FACULTY')")
     public ResponseEntity<List<CourseDTO>> getMyAssignedCourses() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
-        List<CourseDTO> courses = courseService.getCoursesByFacultyUsername(username);
-        return ResponseEntity.ok(courses);
+        
+        // Check if user is a faculty member
+        if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_FACULTY"))) {
+            List<CourseDTO> courses = courseService.getCoursesByFacultyUsername(username);
+            return ResponseEntity.ok(courses);
+        } 
+        // If user is a student
+        else if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_STUDENT"))) {
+            List<CourseDTO> courses = courseService.getCoursesByStudentUsername(username);
+            return ResponseEntity.ok(courses);
+        }
+        
+        return ResponseEntity.ok(List.of()); // Empty list if not faculty or student
     }
 
     // Get students enrolled in all courses taught by the currently logged-in faculty

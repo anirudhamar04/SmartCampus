@@ -28,6 +28,10 @@ import FacilityBooking from './pages/teacher/FacilityBooking';
 import StudentDashboard from './pages/student/Dashboard';
 import CourseResources from './pages/student/CourseResources';
 import StudentAttendance from './pages/student/Attendance';
+import StudentEvents from './pages/student/Events';
+import StudentFeedback from './pages/student/Feedback';
+import StudentFacilityBooking from './pages/student/FacilityBooking';
+import StudentCafeteria from './pages/student/Cafeteria';
 
 // Error Pages
 import NotFound from './pages/NotFound';
@@ -94,6 +98,10 @@ const App = () => {
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/student/courses/:courseId/resources" element={<CourseResources />} />
         <Route path="/student/attendance" element={<StudentAttendance />} />
+        <Route path="/student/events" element={<StudentEvents />} />
+        <Route path="/student/feedback" element={<StudentFeedback />} />
+        <Route path="/student/facilities" element={<StudentFacilityBooking />} />
+        <Route path="/student/cafeteria" element={<StudentCafeteria />} />
       </Route>
       
       {/* Error Routes */}

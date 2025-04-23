@@ -14,7 +14,7 @@ import {
 } from 'react-icons/fa';
 
 const StudentCafeteria = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [menuItems, setMenuItems] = useState([]);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -34,34 +34,65 @@ const StudentCafeteria = () => {
   const deliveryLocations = ['Campus Center', 'Library', 'Student Union', 'Dorm A', 'Dorm B', 'Dorm C', 'Sports Complex', 'Pick Up'];
 
   useEffect(() => {
-    fetchInitialData();
-  }, [user.id]);
+    if (currentUser && currentUser.id) {
+      fetchInitialData();
+    }
+  }, [currentUser]);
 
   const fetchInitialData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!currentUser || !currentUser.id) {
+        setError('User information not available. Please log in again.');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('Fetching cafeteria data for user:', currentUser.id);
       
       // Fetch all cafeteria items
       const itemsResponse = await cafeteriaService.getAllItems();
-      setMenuItems(itemsResponse.data);
+      console.log('Menu items response:', itemsResponse);
       
-      // Extract unique categories
-      const uniqueCategories = [...new Set(itemsResponse.data.map(item => item.category))];
-      setCategories(uniqueCategories);
+      if (itemsResponse && itemsResponse.data) {
+        setMenuItems(itemsResponse.data);
+        
+        // Extract unique categories
+        const uniqueCategories = [...new Set(itemsResponse.data.map(item => item.category).filter(Boolean))];
+        setCategories(uniqueCategories);
+      } else {
+        setMenuItems([]);
+        setCategories([]);
+      }
       
       // Fetch user's orders
-      const ordersResponse = await cafeteriaService.getOrdersByUser(user.id);
-      setOrders(ordersResponse.data);
+      const ordersResponse = await cafeteriaService.getOrdersByUser(currentUser.id);
+      console.log('Orders response:', ordersResponse);
+      
+      if (ordersResponse && ordersResponse.data) {
+        setOrders(ordersResponse.data);
+      } else {
+        setOrders([]);
+      }
       
       setLoading(false);
     } catch (err) {
+      console.error('Error fetching cafeteria data:', err);
       setError('Failed to fetch cafeteria data. Please try again later.');
       setLoading(false);
-      console.error('Error fetching cafeteria data:', err);
+      setMenuItems([]);
+      setOrders([]);
     }
   };
 
   const handleAddToCart = (item) => {
+    if (!item || !item.id) {
+      console.error('Invalid item:', item);
+      return;
+    }
+    
     const existingItem = cart.find(cartItem => cartItem.itemId === item.id);
     
     if (existingItem) {
@@ -113,8 +144,34 @@ const StudentCafeteria = () => {
     setCart(cart.filter((_, i) => i !== index));
   };
 
+  const refreshOrders = async () => {
+    try {
+      if (!currentUser || !currentUser.id) {
+        console.error('Cannot refresh orders: No user information');
+        return;
+      }
+
+      const ordersResponse = await cafeteriaService.getOrdersByUser(currentUser.id);
+      
+      if (ordersResponse && ordersResponse.data) {
+        setOrders(ordersResponse.data);
+      } else {
+        setOrders([]);
+      }
+    } catch (err) {
+      console.error('Error refreshing orders:', err);
+      // Don't show error to user as this is a background refresh
+    }
+  };
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    setError(null);
+    
+    if (!currentUser || !currentUser.id) {
+      setError('User information not available. Please log in again.');
+      return;
+    }
     
     if (cart.length === 0) {
       setError('Your cart is empty. Please add items before placing an order.');
@@ -131,17 +188,18 @@ const StudentCafeteria = () => {
       
       // Format the order data
       const orderData = {
-        userId: user.id,
+        userId: currentUser.id,
         items: cart.map(item => ({
           itemId: item.itemId,
           quantity: item.quantity,
-          specialInstructions: item.specialInstructions
+          specialInstructions: item.specialInstructions?.trim() || ''
         })),
         paymentMethod,
         deliveryLocation,
-        remarks
+        remarks: remarks?.trim() || ''
       };
       
+      console.log('Placing order:', orderData);
       await cafeteriaService.createOrder(orderData);
       
       // Reset state
@@ -154,55 +212,57 @@ const StudentCafeteria = () => {
       setSuccessMessage('Order placed successfully!');
       
       // Refresh orders
-      const ordersResponse = await cafeteriaService.getOrdersByUser(user.id);
-      setOrders(ordersResponse.data);
+      await refreshOrders();
       
       // Switch to orders tab
       setActiveTab('orders');
-      
-      setOrderLoading(false);
       
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage('');
       }, 3000);
     } catch (err) {
-      setError('Failed to place order. Please try again.');
-      setOrderLoading(false);
       console.error('Error placing order:', err);
-      
-      // Clear error message after 3 seconds
-      setTimeout(() => {
-        setError(null);
-      }, 3000);
+      setError(`Failed to place order: ${err.response?.data?.message || 'Please try again.'}`);
+    } finally {
+      setOrderLoading(false);
     }
   };
 
   // Calculate cart total
   const calculateTotal = () => {
+    if (!cart || cart.length === 0) return 0;
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
   // Format price
   const formatPrice = (price) => {
+    if (!price && price !== 0) return '$0.00';
     return `$${parseFloat(price).toFixed(2)}`;
   };
 
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit' 
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit' 
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
   };
 
   // Get status badge class
   const getStatusBadgeClass = (status) => {
+    if (!status) return 'bg-zinc-100 text-zinc-800';
+    
     switch (status) {
       case 'PENDING':
         return 'bg-yellow-100 text-yellow-800';
@@ -211,11 +271,11 @@ const StudentCafeteria = () => {
       case 'READY':
         return 'bg-green-100 text-green-800';
       case 'COMPLETED':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-zinc-100 text-zinc-800';
       case 'CANCELLED':
         return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-zinc-100 text-zinc-800';
     }
   };
 
@@ -227,18 +287,18 @@ const StudentCafeteria = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Campus Cafeteria</h1>
+        <h1 className="text-3xl font-bold text-zinc-800">Campus Cafeteria</h1>
         
         {/* Cart Summary Button */}
         {activeTab === 'menu' && (
           <button
             onClick={() => setShowCheckout(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
-            disabled={cart.length === 0}
+            className="px-4 py-2 bg-black text-white rounded-md hover:bg-zinc-800 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!cart || cart.length === 0}
           >
             <FaShoppingCart className="mr-2" />
-            Cart ({cart.length} {cart.length === 1 ? 'item' : 'items'})
-            {cart.length > 0 && (
+            Cart ({cart ? cart.length : 0} {cart && cart.length === 1 ? 'item' : 'items'})
+            {cart && cart.length > 0 && (
               <span className="ml-2 font-bold">{formatPrice(calculateTotal())}</span>
             )}
           </button>
@@ -257,6 +317,20 @@ const StudentCafeteria = () => {
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center">
           <FaExclamationCircle className="mr-2" />
           {error}
+          <button 
+            className="ml-auto text-red-700 hover:text-red-900" 
+            onClick={() => setError(null)}
+            aria-label="Dismiss error"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
+      {/* Check if user is authenticated */}
+      {!currentUser && (
+        <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-md">
+          <p>You need to be logged in to place orders. Please log in to continue.</p>
         </div>
       )}
 
@@ -267,15 +341,15 @@ const StudentCafeteria = () => {
             <h2 className="text-xl font-semibold">Your Order</h2>
             <button
               onClick={() => setShowCheckout(false)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-zinc-500 hover:text-zinc-700"
             >
               &times;
             </button>
           </div>
           
-          {cart.length === 0 ? (
-            <div className="text-center py-10 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Your cart is empty.</p>
+          {!cart || cart.length === 0 ? (
+            <div className="text-center py-10 bg-zinc-50 rounded-lg">
+              <p className="text-zinc-500">Your cart is empty.</p>
             </div>
           ) : (
             <form onSubmit={handlePlaceOrder}>
@@ -284,11 +358,11 @@ const StudentCafeteria = () => {
                 <h3 className="text-lg font-medium mb-3">Items in Cart</h3>
                 <div className="space-y-4">
                   {cart.map((item, index) => (
-                    <div key={index} className="flex flex-col p-4 border rounded-md bg-gray-50">
+                    <div key={index} className="flex flex-col p-4 border rounded-md bg-zinc-50">
                       <div className="flex justify-between items-center mb-2">
                         <div>
                           <span className="font-medium">{item.name}</span>
-                          <span className="text-gray-600 ml-2">
+                          <span className="text-zinc-600 ml-2">
                             {formatPrice(item.price)} each
                           </span>
                         </div>
@@ -296,7 +370,7 @@ const StudentCafeteria = () => {
                           <button
                             type="button"
                             onClick={() => handleUpdateCartItem(index, item.quantity - 1)}
-                            className="p-1 text-gray-600 hover:text-gray-900"
+                            className="p-1 text-zinc-600 hover:text-zinc-900"
                           >
                             <FaMinus size={12} />
                           </button>
@@ -304,7 +378,7 @@ const StudentCafeteria = () => {
                           <button
                             type="button"
                             onClick={() => handleUpdateCartItem(index, item.quantity + 1)}
-                            className="p-1 text-gray-600 hover:text-gray-900"
+                            className="p-1 text-zinc-600 hover:text-zinc-900"
                           >
                             <FaPlus size={12} />
                           </button>
@@ -321,10 +395,10 @@ const StudentCafeteria = () => {
                       <div className="flex justify-between items-center">
                         <input
                           type="text"
-                          value={item.specialInstructions}
+                          value={item.specialInstructions || ''}
                           onChange={(e) => handleUpdateSpecialInstructions(index, e.target.value)}
                           placeholder="Special instructions (optional)"
-                          className="flex-grow p-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="flex-grow p-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-zinc-500"
                         />
                         <span className="ml-4 font-semibold">
                           {formatPrice(item.price * item.quantity)}
@@ -343,13 +417,13 @@ const StudentCafeteria = () => {
               {/* Order Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">
+                  <label className="block text-zinc-700 font-medium mb-2">
                     Delivery Location <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={deliveryLocation}
                     onChange={(e) => setDeliveryLocation(e.target.value)}
-                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500"
                     required
                   >
                     <option value="">Select Location</option>
@@ -362,13 +436,13 @@ const StudentCafeteria = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">
+                  <label className="block text-zinc-700 font-medium mb-2">
                     Payment Method
                   </label>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500"
                   >
                     {paymentMethods.map((method) => (
                       <option key={method} value={method}>
@@ -380,13 +454,13 @@ const StudentCafeteria = () => {
               </div>
               
               <div className="mb-6">
-                <label className="block text-gray-700 font-medium mb-2">
+                <label className="block text-zinc-700 font-medium mb-2">
                   Additional Remarks
                 </label>
                 <textarea
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
-                  className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                  className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 min-h-[80px]"
                   placeholder="Any additional information for your order"
                 ></textarea>
               </div>
@@ -394,8 +468,8 @@ const StudentCafeteria = () => {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={orderLoading || cart.length === 0}
-                  className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-green-300 disabled:cursor-not-allowed flex items-center"
+                  disabled={orderLoading || !cart || cart.length === 0 || !currentUser}
+                  className="px-6 py-3 bg-black text-white rounded-md hover:bg-zinc-800 transition-colors disabled:bg-zinc-400 disabled:cursor-not-allowed flex items-center"
                 >
                   <FaCreditCard className="mr-2" />
                   {orderLoading ? 'Processing...' : 'Place Order'}
@@ -409,14 +483,19 @@ const StudentCafeteria = () => {
       {/* Tabs */}
       <div className="flex border-b mb-6">
         <button
-          className={`px-4 py-2 font-medium ${activeTab === 'menu' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+          className={`px-4 py-2 font-medium ${activeTab === 'menu' ? 'text-black border-b-2 border-black' : 'text-zinc-500'}`}
           onClick={() => setActiveTab('menu')}
         >
           Menu
         </button>
         <button
-          className={`px-4 py-2 font-medium ${activeTab === 'orders' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('orders')}
+          className={`px-4 py-2 font-medium ${activeTab === 'orders' ? 'text-black border-b-2 border-black' : 'text-zinc-500'}`}
+          onClick={() => {
+            setActiveTab('orders');
+            if (currentUser && currentUser.id) {
+              refreshOrders();
+            }
+          }}
         >
           My Orders
         </button>
@@ -425,7 +504,7 @@ const StudentCafeteria = () => {
       {loading ? (
         <div className="text-center py-10">
           <div className="spinner"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+          <p className="mt-2 text-zinc-600">Loading...</p>
         </div>
       ) : activeTab === 'menu' ? (
         <>
@@ -435,21 +514,21 @@ const StudentCafeteria = () => {
               <button
                 className={`px-4 py-2 rounded-full text-sm font-medium ${
                   selectedCategory === '' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-zinc-900 text-white' 
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
                 }`}
                 onClick={() => setSelectedCategory('')}
               >
                 All Items
               </button>
               
-              {categories.map((category) => (
+              {categories && categories.map((category) => (
                 <button
                   key={category}
                   className={`px-4 py-2 rounded-full text-sm font-medium ${
                     selectedCategory === category 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-zinc-900 text-white' 
+                      : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
                   }`}
                   onClick={() => setSelectedCategory(category)}
                 >
@@ -460,16 +539,16 @@ const StudentCafeteria = () => {
           </div>
           
           {/* Menu Items */}
-          {filteredMenuItems.length === 0 ? (
-            <div className="text-center py-10 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No menu items found.</p>
+          {!filteredMenuItems || filteredMenuItems.length === 0 ? (
+            <div className="text-center py-10 bg-zinc-50 rounded-lg">
+              <p className="text-zinc-500">No menu items found.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredMenuItems.map((item) => (
                 <div 
                   key={item.id} 
-                  className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md"
+                  className="bg-white rounded-lg shadow-sm overflow-hidden border border-zinc-200 transition-all duration-200 hover:shadow-md"
                 >
                   {item.imageUrl && (
                     <div className="h-48 overflow-hidden">
@@ -488,17 +567,17 @@ const StudentCafeteria = () => {
                     </div>
                     
                     <div className="mb-4">
-                      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full mb-2">
+                      <span className="inline-block px-2 py-1 bg-zinc-100 text-zinc-700 text-xs rounded-full mb-2">
                         {item.category}
                       </span>
-                      <p className="text-gray-600 line-clamp-2">{item.description}</p>
+                      <p className="text-zinc-600 line-clamp-2">{item.description}</p>
                     </div>
                     
                     <div className="flex items-center justify-between">
                       {item.available ? (
                         <button
                           onClick={() => handleAddToCart(item)}
-                          className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+                          className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-zinc-800 transition-colors flex items-center justify-center"
                         >
                           <FaPlus className="mr-2" />
                           Add to Order
@@ -519,17 +598,17 @@ const StudentCafeteria = () => {
         <>
           {/* Orders List */}
           <div className="space-y-6">
-            {orders.length === 0 ? (
-              <div className="text-center py-10 bg-gray-50 rounded-lg">
-                <p className="text-gray-500">You haven't placed any orders yet.</p>
+            {!orders || orders.length === 0 ? (
+              <div className="text-center py-10 bg-zinc-50 rounded-lg">
+                <p className="text-zinc-500">You haven't placed any orders yet.</p>
               </div>
             ) : (
               orders.map((order) => (
-                <div key={order.id} className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                <div key={order.id} className="bg-white p-5 rounded-lg shadow-sm border border-zinc-200">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-lg font-semibold">Order #{order.id}</h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-zinc-500">
                         <FaHistory className="inline-block mr-1" />
                         {formatDate(order.orderTime)}
                       </p>
@@ -542,14 +621,14 @@ const StudentCafeteria = () => {
                   <div className="mb-4">
                     <h4 className="font-medium mb-2">Items:</h4>
                     <div className="space-y-2">
-                      {order.items.map((item, index) => (
+                      {order.items && order.items.map((item, index) => (
                         <div key={index} className="flex justify-between items-center">
                           <div className="flex items-center">
-                            <FaUtensils className="text-gray-400 mr-2" />
+                            <FaUtensils className="text-zinc-400 mr-2" />
                             <span>
                               {item.quantity} x {item.itemName}
                               {item.specialInstructions && (
-                                <span className="text-xs text-gray-500 block ml-5">
+                                <span className="text-xs text-zinc-500 block ml-5">
                                   Note: {item.specialInstructions}
                                 </span>
                               )}
@@ -565,11 +644,11 @@ const StudentCafeteria = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <p className="text-gray-600">
+                      <p className="text-zinc-600">
                         <span className="font-medium">Delivery:</span> {order.deliveryLocation}
                       </p>
-                      <p className="text-gray-600">
-                        <span className="font-medium">Payment:</span> {order.paymentMethod.replace('_', ' ')}
+                      <p className="text-zinc-600">
+                        <span className="font-medium">Payment:</span> {order.paymentMethod && order.paymentMethod.replace('_', ' ')}
                         {' '}
                         <span className={`px-2 py-0.5 rounded text-xs ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                           {order.paymentStatus}
@@ -579,7 +658,7 @@ const StudentCafeteria = () => {
                     
                     {order.remarks && (
                       <div>
-                        <p className="text-gray-600">
+                        <p className="text-zinc-600">
                           <span className="font-medium">Remarks:</span> {order.remarks}
                         </p>
                       </div>
@@ -587,7 +666,7 @@ const StudentCafeteria = () => {
                   </div>
                   
                   <div className="flex justify-between items-center pt-3 border-t">
-                    <span className="font-medium text-gray-700">Total:</span>
+                    <span className="font-medium text-zinc-700">Total:</span>
                     <span className="text-lg font-bold text-green-700">
                       {formatPrice(order.totalAmount)}
                     </span>

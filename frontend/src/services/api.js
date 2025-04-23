@@ -142,9 +142,9 @@ export const eventService = {
   create: (data) => api.post('/events', data),
   update: (id, data) => api.put(`/events/${id}`, data),
   delete: (id) => api.delete(`/events/${id}`),
-  registerParticipant: (eventId, userId) => api.post(`/events/${eventId}/participants/${userId}`),
-  removeParticipant: (eventId, userId) => api.delete(`/events/${eventId}/participants/${userId}`),
-  getParticipants: (eventId) => api.get(`/events/${eventId}/participants`)
+  registerParticipant: (eventId, userId) => api.post(`/events/${eventId}/register/${userId}`),
+  removeParticipant: (eventId, userId) => api.delete(`/events/${eventId}/unregister/${userId}`),
+  getParticipants: (eventId) => api.get(`/events/${eventId}`)
 };
 
 // Resource services

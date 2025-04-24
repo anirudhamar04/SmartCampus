@@ -19,7 +19,8 @@ import {
   CircularProgress,
   Alert,
   Badge,
-  LinearProgress
+  LinearProgress,
+  Chip
 } from '@mui/material';
 import { 
   School as SchoolIcon, 
@@ -28,10 +29,29 @@ import {
   Event as EventIcon, 
   Notifications as NotificationsIcon,
   Timeline as TimelineIcon,
-  AccessTime as AccessTimeIcon
+  AccessTime as AccessTimeIcon,
+  ArrowForward as ArrowForwardIcon
 } from '@mui/icons-material';
 import { courseService, notificationService, attendanceService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+
+// Custom theme palette for consistent colors
+const palette = {
+  background: {
+    dark: '#121214',    // Almost black
+    main: '#18181b',    // Dark background
+    card: '#27272a',    // Card background
+  },
+  divider: '#3f3f46',   // Divider color
+  text: {
+    primary: '#ffffff', // White text
+    secondary: '#a1a1aa' // Secondary text
+  },
+  accent: {
+    main: '#6366f1',    // Indigo accent
+    light: '#818cf8'    // Light indigo
+  }
+};
 
 const StudentDashboard = () => {
   const [courses, setCourses] = useState([]);
@@ -84,96 +104,217 @@ const StudentDashboard = () => {
 
   // Get status color based on percentage
   const getStatusColor = (percentage) => {
-    if (percentage >= 75) return 'success.main';
-    if (percentage >= 60) return 'warning.main';
-    return 'error.main';
+    if (percentage >= 75) return '#10b981'; // green
+    if (percentage >= 60) return '#f59e0b'; // amber
+    return '#ef4444'; // red
+  };
+
+  // Get notification icon by category
+  const getNotificationIcon = (category) => {
+    switch (category) {
+      case 'COURSE':
+        return <BookIcon fontSize="small" />;
+      case 'EVENT':
+        return <EventIcon fontSize="small" />;
+      default:
+        return <NotificationsIcon fontSize="small" />;
+    }
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ 
+      py: 4, 
+      minHeight: '100vh',
+      bgcolor: palette.background.dark,
+      color: palette.text.primary
+    }}>
+      {/* Header Section */}
       <Box sx={{ 
-        bgcolor: 'black', 
+        bgcolor: palette.accent.main, 
+        backgroundImage: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
         color: 'white', 
-        p: 3, 
-        borderRadius: 2, 
+        p: 4, 
+        borderRadius: 3, 
         mb: 4,
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
       }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
           Student Dashboard
         </Typography>
         
-        <Typography variant="h5" gutterBottom>
-          Welcome, {currentUser?.name || 'Student'}!
+        <Typography variant="h6" gutterBottom sx={{ opacity: 0.9 }}>
+          Welcome back, {currentUser?.name || 'Student'}!
         </Typography>
-        <Typography variant="body1" sx={{ color: 'zinc.400' }}>
-          Here's an overview of your academic information and resources.
+        <Typography variant="body1" sx={{ opacity: 0.7 }}>
+          Here's your academic progress and latest updates
         </Typography>
       </Box>
 
       <Grid container spacing={4}>
-        {/* Enrolled Courses Section */}
+        {/* Main Content - Enrolled Courses */}
         <Grid item xs={12} md={8}>
-          <Paper elevation={3} sx={{ 
-            p: 3, 
+          <Paper elevation={0} sx={{ 
+            p: 0, 
             height: '100%',
-            bgcolor: '#18181b', // zinc-900
-            color: 'white',
-            borderRadius: 2
+            bgcolor: 'transparent',
+            color: palette.text.primary,
+            borderRadius: 3,
+            overflow: 'hidden'
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <SchoolIcon sx={{ mr: 1, color: '#d4d4d8' /* zinc-300 */ }} />
-              <Typography variant="h6">My Enrolled Courses</Typography>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              mb: 3,
+              px: 1 
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <SchoolIcon sx={{ mr: 1.5, color: palette.accent.light }} />
+                <Typography variant="h5" fontWeight="medium">My Courses</Typography>
+              </Box>
+              <Button 
+                variant="text" 
+                size="small" 
+                endIcon={<ArrowForwardIcon />}
+                component={Link} 
+                to="/student/courses"
+                sx={{ 
+                  color: palette.accent.light,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.08)' }
+                }}
+              >
+                View all
+              </Button>
             </Box>
-            <Divider sx={{ mb: 2, borderColor: '#3f3f46' /* zinc-700 */ }} />
             
             {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress sx={{ color: '#d4d4d8' /* zinc-300 */ }} />
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+                <CircularProgress sx={{ color: palette.accent.light }} />
               </Box>
             ) : error ? (
-              <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 2, 
+                  bgcolor: 'rgba(239, 68, 68, 0.1)', 
+                  color: '#ef4444',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  borderRadius: 2
+                }}
+              >
+                {error}
+              </Alert>
             ) : courses.length === 0 ? (
-              <Alert severity="info">You are not enrolled in any courses yet.</Alert>
+              <Box 
+                sx={{ 
+                  textAlign: 'center', 
+                  p: 6, 
+                  bgcolor: palette.background.main,
+                  borderRadius: 3,
+                  border: `1px solid ${palette.divider}`
+                }}
+              >
+                <BookIcon sx={{ fontSize: 60, color: palette.text.secondary, opacity: 0.3, mb: 2 }} />
+                <Typography variant="h6" gutterBottom sx={{ color: palette.text.secondary }}>
+                  No Enrolled Courses
+                </Typography>
+                <Typography variant="body2" sx={{ color: palette.text.secondary, mb: 3 }}>
+                  You are not enrolled in any courses yet
+                </Typography>
+                <Button 
+                  variant="outlined"
+                  component={Link}
+                  to="/student/courses/browse"
+                  sx={{ 
+                    borderColor: palette.accent.main,
+                    color: palette.accent.main,
+                    '&:hover': { borderColor: palette.accent.light, bgcolor: 'rgba(99, 102, 241, 0.08)' }
+                  }}
+                >
+                  Browse Available Courses
+                </Button>
+              </Box>
             ) : (
-              <Grid container spacing={2}>
+              <Grid container spacing={3}>
                 {courses.map((course) => (
                   <Grid item xs={12} sm={6} key={course.id}>
                     <Card sx={{ 
                       height: '100%', 
                       display: 'flex', 
                       flexDirection: 'column',
-                      bgcolor: '#27272a', // zinc-800
-                      color: 'white',
-                      borderRadius: 2,
+                      bgcolor: palette.background.main,
+                      color: palette.text.primary,
+                      borderRadius: 3,
+                      border: `1px solid ${palette.divider}`,
+                      transition: 'all 0.3s ease',
                       '&:hover': {
-                        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                         transform: 'translateY(-4px)',
-                        transition: 'all 0.3s ease'
+                        borderColor: palette.accent.main,
                       }
                     }}>
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" component="div">
+                      <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                        {/* Course code chip */}
+                        <Chip 
+                          label={course.code} 
+                          size="small" 
+                          sx={{ 
+                            mb: 2, 
+                            bgcolor: 'rgba(99, 102, 241, 0.1)', 
+                            color: palette.accent.light,
+                            fontWeight: 'medium'
+                          }} 
+                        />
+                        
+                        <Typography variant="h6" component="div" fontWeight="bold" gutterBottom>
                           {course.name}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#a1a1aa' /* zinc-400 */ }} sx={{ mb: 1 }}>
-                          {course.code} • {course.faculty}
+                        
+                        <Typography variant="body2" sx={{ color: palette.text.secondary, mb: 2 }}>
+                          {course.faculty}
                         </Typography>
-                        <Typography variant="caption" display="block" sx={{ mb: 1, color: '#a1a1aa' /* zinc-400 */ }}>
-                          {course.schedule || 'Schedule not available'}
-                        </Typography>
+                        
+                        {course.schedule && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <AccessTimeIcon sx={{ fontSize: 16, mr: 1, color: palette.text.secondary }} />
+                            <Typography variant="caption" sx={{ color: palette.text.secondary }}>
+                              {course.schedule}
+                            </Typography>
+                          </Box>
+                        )}
                       </CardContent>
-                      <CardActions>
+                      
+                      <Divider sx={{ borderColor: palette.divider }} />
+                      
+                      <CardActions sx={{ p: 2, justifyContent: 'space-between' }}>
                         <Button 
                           size="small" 
+                          component={Link} 
+                          to={`/student/courses/${course.id}`}
+                          sx={{ 
+                            color: palette.text.secondary,
+                            textTransform: 'none',
+                            '&:hover': {
+                              color: palette.text.primary,
+                            }
+                          }}
+                        >
+                          View Details
+                        </Button>
+                        <Button 
+                          size="small" 
+                          variant="contained"
                           component={Link} 
                           to={`/student/courses/${course.id}/resources`}
                           startIcon={<DescriptionIcon />}
                           sx={{ 
-                            color: '#d4d4d8', // zinc-300
+                            bgcolor: palette.accent.main,
                             '&:hover': {
-                              backgroundColor: 'rgba(212, 212, 216, 0.1)'
-                            }
+                              bgcolor: palette.accent.light,
+                            },
+                            textTransform: 'none',
+                            boxShadow: 'none'
                           }}
                         >
                           Resources
@@ -187,90 +328,143 @@ const StudentDashboard = () => {
           </Paper>
         </Grid>
 
-        {/* Sidebar with Recent Activity and Attendance */}
+        {/* Sidebar - Attendance and Notifications */}
         <Grid item xs={12} md={4}>
-          <Grid container direction="column" spacing={3}>
+          <Grid container direction="column" spacing={4}>
             {/* Attendance Overview */}
             <Grid item>
-              <Paper elevation={3} sx={{ 
+              <Paper elevation={0} sx={{ 
                 p: 3,
-                bgcolor: '#18181b', // zinc-900
-                color: 'white',
-                borderRadius: 2
+                bgcolor: palette.background.main,
+                color: palette.text.primary,
+                borderRadius: 3,
+                border: `1px solid ${palette.divider}`
               }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <TimelineIcon sx={{ mr: 1, color: '#d4d4d8' /* zinc-300 */ }} />
-                  <Typography variant="h6">Attendance Overview</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <TimelineIcon sx={{ mr: 1.5, color: palette.accent.light }} />
+                  <Typography variant="h6" fontWeight="medium">Attendance</Typography>
                 </Box>
-                <Divider sx={{ mb: 2, borderColor: '#3f3f46' /* zinc-700 */ }} />
                 
                 {loading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-                    <CircularProgress size={24} sx={{ color: '#d4d4d8' /* zinc-300 */ }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={30} sx={{ color: palette.accent.light }} />
                   </Box>
                 ) : attendanceData ? (
                   <>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ color: '#a1a1aa' /* zinc-400 */ }} gutterBottom>
-                        Overall Attendance
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Box sx={{ width: '100%', mr: 1 }}>
-                          <LinearProgress 
-                            variant="determinate" 
-                            value={Math.min(attendanceData.percentage, 100)} 
-                            color={
-                              attendanceData.percentage >= 75 ? "success" : 
-                              attendanceData.percentage >= 60 ? "warning" : "error"
-                            }
-                            sx={{ 
-                              height: 10, 
-                              borderRadius: 5,
-                              backgroundColor: '#3f3f46' // zinc-700 as background
-                            }}
-                          />
-                        </Box>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      mb: 3,
+                      position: 'relative'
+                    }}>
+                      {/* Large circular progress indicator */}
+                      <Box 
+                        sx={{ 
+                          position: 'relative', 
+                          width: 120, 
+                          height: 120, 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mb: 2
+                        }}
+                      >
+                        <CircularProgress 
+                          variant="determinate" 
+                          value={100} 
+                          size={120}
+                          thickness={4}
+                          sx={{ 
+                            color: palette.divider,
+                            position: 'absolute'
+                          }}
+                        />
+                        <CircularProgress 
+                          variant="determinate" 
+                          value={Math.min(attendanceData.percentage, 100)} 
+                          size={120}
+                          thickness={4}
+                          sx={{ 
+                            color: getStatusColor(attendanceData.percentage),
+                            position: 'absolute'
+                          }}
+                        />
                         <Typography 
-                          variant="h6" 
-                          color={getStatusColor(attendanceData.percentage)}
-                          sx={{ fontWeight: 'bold' }}
+                          variant="h4" 
+                          component="div" 
+                          fontWeight="bold"
+                          sx={{ color: getStatusColor(attendanceData.percentage) }}
                         >
-                          {attendanceData.percentage.toFixed(2)}%
+                          {Math.round(attendanceData.percentage)}%
                         </Typography>
                       </Box>
+                      
+                      <Typography variant="body2" sx={{ color: palette.text.secondary, textAlign: 'center' }}>
+                        Overall Attendance Rate
+                      </Typography>
                     </Box>
                     
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#a1a1aa' /* zinc-400 */ }}>
-                        Classes Attended
-                      </Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        {attendanceData.attendedClasses} / {attendanceData.totalClasses}
-                      </Typography>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      p: 2, 
+                      bgcolor: palette.background.card,
+                      borderRadius: 2,
+                      mb: 3
+                    }}>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {attendanceData.attendedClasses}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: palette.text.secondary }}>
+                          Classes Attended
+                        </Typography>
+                      </Box>
+                      <Divider orientation="vertical" flexItem sx={{ borderColor: palette.divider }} />
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {attendanceData.totalClasses}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: palette.text.secondary }}>
+                          Total Classes
+                        </Typography>
+                      </Box>
                     </Box>
                     
                     <Button 
                       fullWidth 
                       variant="outlined" 
-                      startIcon={<AccessTimeIcon />}
+                      endIcon={<ArrowForwardIcon />}
                       component={Link}
                       to="/student/attendance"
                       sx={{ 
-                        mt: 1, 
-                        borderColor: '#d4d4d8', // zinc-300
-                        color: '#d4d4d8', // zinc-300
+                        borderColor: palette.divider,
+                        color: palette.text.primary,
+                        borderRadius: 2,
+                        py: 1,
+                        textTransform: 'none',
                         '&:hover': {
-                          borderColor: 'white',
-                          backgroundColor: 'rgba(212, 212, 216, 0.1)'
+                          borderColor: palette.accent.main,
+                          bgcolor: 'rgba(99, 102, 241, 0.08)'
                         }
                       }}
                     >
-                      View Full Attendance
+                      View Full Attendance Details
                     </Button>
                   </>
                 ) : (
-                  <Alert severity="info" sx={{ bgcolor: '#383838', color: '#d4d4d8' }}>
-                    No attendance data available.
+                  <Alert 
+                    severity="info" 
+                    sx={{ 
+                      bgcolor: 'rgba(59, 130, 246, 0.1)', 
+                      color: '#60a5fa',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: 2 
+                    }}
+                  >
+                    No attendance data available yet.
                   </Alert>
                 )}
               </Paper>
@@ -278,55 +472,146 @@ const StudentDashboard = () => {
             
             {/* Notifications */}
             <Grid item>
-              <Paper elevation={3} sx={{ 
+              <Paper elevation={0} sx={{ 
                 p: 3,
-                bgcolor: '#18181b', // zinc-900
-                color: 'white',
-                borderRadius: 2 
+                bgcolor: palette.background.main,
+                color: palette.text.primary,
+                borderRadius: 3,
+                border: `1px solid ${palette.divider}`
               }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Badge badgeContent={notifications.length} color="error" sx={{ mr: 1 }}>
-                    <NotificationsIcon sx={{ color: '#d4d4d8' /* zinc-300 */ }} />
-                  </Badge>
-                  <Typography variant="h6">Recent Notifications</Typography>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  mb: 3 
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Badge 
+                      badgeContent={notifications.length} 
+                      color="error" 
+                      sx={{ 
+                        mr: 1.5,
+                        '& .MuiBadge-badge': {
+                          bgcolor: '#ef4444',
+                          color: 'white'
+                        }
+                      }}
+                    >
+                      <NotificationsIcon sx={{ color: palette.accent.light }} />
+                    </Badge>
+                    <Typography variant="h6" fontWeight="medium">Notifications</Typography>
+                  </Box>
+                  
+                  {notifications.length > 0 && (
+                    <Button 
+                      size="small" 
+                      sx={{ 
+                        color: palette.accent.light,
+                        textTransform: 'none',
+                        '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.08)' }
+                      }}
+                    >
+                      Mark all read
+                    </Button>
+                  )}
                 </Box>
-                <Divider sx={{ mb: 2, borderColor: '#3f3f46' /* zinc-700 */ }} />
                 
                 {loading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-                    <CircularProgress size={24} sx={{ color: '#d4d4d8' /* zinc-300 */ }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={30} sx={{ color: palette.accent.light }} />
                   </Box>
                 ) : notifications.length === 0 ? (
-                  <Typography variant="body2" sx={{ color: '#a1a1aa' /* zinc-400 */ }} align="center">
-                    No new notifications
-                  </Typography>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 4, 
+                    bgcolor: palette.background.card,
+                    borderRadius: 2
+                  }}>
+                    <NotificationsIcon sx={{ fontSize: 40, color: palette.text.secondary, opacity: 0.3, mb: 2 }} />
+                    <Typography variant="body1" sx={{ color: palette.text.secondary }}>
+                      You're all caught up!
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: palette.text.secondary }}>
+                      No new notifications
+                    </Typography>
+                  </Box>
                 ) : (
-                  <List>
-                    {notifications.slice(0, 3).map((notification) => (
-                      <ListItem key={notification.id} alignItems="flex-start" sx={{ px: 0 }}>
-                        <ListItemAvatar>
-                          <Avatar>
-                            {notification.category === 'COURSE' ? <BookIcon /> : 
-                             notification.category === 'EVENT' ? <EventIcon /> : 
-                             <NotificationsIcon />}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={notification.title}
-                          secondary={notification.message}
-                          secondaryTypographyProps={{ noWrap: true }}
-                        />
-                      </ListItem>
-                    ))}
+                  <>
+                    <List sx={{ p: 0 }}>
+                      {notifications.slice(0, 3).map((notification, index) => (
+                        <React.Fragment key={notification.id}>
+                          <ListItem 
+                            alignItems="flex-start" 
+                            sx={{ 
+                              px: 0, 
+                              py: 2, 
+                              borderRadius: 1,
+                              '&:hover': { bgcolor: palette.background.card }
+                            }}
+                          >
+                            <ListItemAvatar>
+                              <Avatar sx={{ 
+                                bgcolor: 'rgba(99, 102, 241, 0.1)', 
+                                color: palette.accent.light 
+                              }}>
+                                {getNotificationIcon(notification.category)}
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                <Typography variant="body1" fontWeight="medium" gutterBottom>
+                                  {notification.title}
+                                </Typography>
+                              }
+                              secondary={
+                                <>
+                                  <Typography 
+                                    variant="body2" 
+                                    component="span"
+                                    sx={{ 
+                                      color: palette.text.secondary,
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: 'vertical',
+                                      overflow: 'hidden',
+                                      mb: 1
+                                    }}
+                                  >
+                                    {notification.message}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ color: palette.text.secondary }}>
+                                    {notification.date ? formatDate(notification.date) : 'Just now'}
+                                  </Typography>
+                                </>
+                              }
+                            />
+                          </ListItem>
+                          {index < notifications.slice(0, 3).length - 1 && (
+                            <Divider sx={{ borderColor: palette.divider }} />
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </List>
                     
                     {notifications.length > 3 && (
-                      <Box sx={{ textAlign: 'center', mt: 1 }}>
-                        <Button size="small" color="primary">
-                          View {notifications.length - 3} more
+                      <Box sx={{ textAlign: 'center', mt: 2 }}>
+                        <Button 
+                          variant="text"
+                          size="small" 
+                          component={Link}
+                          to="/student/notifications"
+                          endIcon={<ArrowForwardIcon />}
+                          sx={{ 
+                            color: palette.accent.light,
+                            textTransform: 'none',
+                            '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.08)' }
+                          }}
+                        >
+                          View all {notifications.length} notifications
                         </Button>
                       </Box>
                     )}
-                  </List>
+                  </>
                 )}
               </Paper>
             </Grid>
@@ -337,4 +622,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboard; 
+export default StudentDashboard;

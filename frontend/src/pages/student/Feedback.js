@@ -10,6 +10,7 @@ const StudentFeedback = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [activeTab, setActiveTab] = useState('active');
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
   
   // Form state
   const [subject, setSubject] = useState('');
@@ -21,12 +22,13 @@ const StudentFeedback = () => {
 
   const categories = ['GENERAL', 'FACILITY', 'SERVICE', 'ACADEMIC', 'OTHER'];
   const priorities = ['HIGH', 'MEDIUM', 'LOW'];
+  const statusOptions = ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
   useEffect(() => {
     if (currentUser && currentUser.id) {
       fetchFeedbacks();
     }
-  }, [currentUser]);
+  }, [currentUser, activeTab]);
 
   const fetchFeedbacks = async () => {
     try {
@@ -124,6 +126,7 @@ const StudentFeedback = () => {
     setPriority(feedback.priority);
     setEditingFeedbackId(feedback.id);
     setShowForm(true);
+    setSelectedFeedback(null);
     
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -138,44 +141,43 @@ const StudentFeedback = () => {
     setShowForm(false);
   };
 
+  const handleSelectFeedback = (feedback) => {
+    setSelectedFeedback(feedback);
+    setShowForm(false);
+  };
+
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-blue-900 text-blue-200';
       case 'IN_PROGRESS':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-yellow-900 text-yellow-200';
       case 'RESOLVED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-900 text-green-200';
       case 'CLOSED':
-        return 'bg-zinc-100 text-zinc-800';
+        return 'bg-gray-900 text-gray-200';
       default:
-        return 'bg-zinc-100 text-zinc-800';
+        return 'bg-primary-800 text-primary-200';
     }
   };
 
   const getPriorityBadgeClass = (priority) => {
     switch (priority) {
       case 'HIGH':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-900 text-red-200';
       case 'MEDIUM':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-yellow-900 text-yellow-200';
       case 'LOW':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-900 text-green-200';
       default:
-        return 'bg-zinc-100 text-zinc-800';
+        return 'bg-primary-800 text-primary-200';
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit' 
-    });
+    return date.toLocaleString();
   };
 
   const filteredFeedbacks = feedbacks.filter(feedback => {
@@ -183,67 +185,80 @@ const StudentFeedback = () => {
       return ['PENDING', 'IN_PROGRESS'].includes(feedback.status);
     } else if (activeTab === 'resolved') {
       return ['RESOLVED', 'CLOSED'].includes(feedback.status);
+    } else if (statusOptions.includes(activeTab)) {
+      return feedback.status === activeTab;
+    } else if (categories.includes(activeTab)) {
+      return feedback.category === activeTab;
     }
     return true;
   });
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-zinc-800">My Feedback</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-black text-white rounded-md hover:bg-zinc-800 transition-colors flex items-center"
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-primary-100">My Feedback</h1>
+        <p className="text-primary-300 mt-2">
+          Submit and track your feedback
+        </p>
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-900 text-red-200 p-3 rounded">
+          {error}
+        </div>
+      )}
+      
+      {/* Success message */}
+      {successMessage && (
+        <div className="bg-green-900 text-green-200 p-3 rounded">
+          {successMessage}
+        </div>
+      )}
+
+      {/* New Feedback Button */}
+      <div className="flex justify-end">
+        <button 
+          onClick={() => {
+            setShowForm(!showForm);
+            setSelectedFeedback(null);
+          }}
+          className="btn btn-primary flex items-center"
         >
           {showForm ? 'Cancel' : 'Submit New Feedback'}
           {!showForm && <FaPaperPlane className="ml-2" />}
         </button>
       </div>
-      
-      {/* Success or Error Messages */}
-      {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center">
-          <FaCheckCircle className="mr-2" />
-          {successMessage}
-        </div>
-      )}
-      
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center">
-          <FaExclamationCircle className="mr-2" />
-          {error}
-        </div>
-      )}
 
       {/* Feedback Submission Form */}
       {showForm && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-semibold mb-4">
+        <div className="bg-primary-800 p-6 rounded-lg">
+          <h2 className="text-xl font-bold text-primary-100 mb-4">
             {editingFeedbackId ? 'Edit Feedback' : 'Submit New Feedback'}
           </h2>
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-zinc-700 font-medium mb-2">
-                Subject <span className="text-red-500">*</span>
+              <label className="block text-primary-200 font-medium mb-2">
+                Subject <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                className="input w-full"
                 placeholder="Enter subject"
                 required
               />
             </div>
             
             <div className="mb-4">
-              <label className="block text-zinc-700 font-medium mb-2">
-                Message <span className="text-red-500">*</span>
+              <label className="block text-primary-200 font-medium mb-2">
+                Message <span className="text-red-400">*</span>
               </label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500 min-h-[120px]"
+                className="input w-full h-32"
                 placeholder="Describe your feedback in detail"
                 required
               />
@@ -251,34 +266,34 @@ const StudentFeedback = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
-                <label className="block text-zinc-700 font-medium mb-2">
+                <label className="block text-primary-200 font-medium mb-2">
                   Category
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                  className="input w-full"
                 >
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
-                      {cat.charAt(0) + cat.slice(1).toLowerCase().replace('_', ' ')}
+                      {cat.replace('_', ' ')}
                     </option>
                   ))}
                 </select>
               </div>
               
               <div>
-                <label className="block text-zinc-700 font-medium mb-2">
+                <label className="block text-primary-200 font-medium mb-2">
                   Priority
                 </label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                  className="input w-full"
                 >
                   {priorities.map((pri) => (
                     <option key={pri} value={pri}>
-                      {pri.charAt(0) + pri.slice(1).toLowerCase()}
+                      {pri}
                     </option>
                   ))}
                 </select>
@@ -289,15 +304,16 @@ const StudentFeedback = () => {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-4 py-2 border border-zinc-300 text-zinc-700 rounded-md hover:bg-zinc-50"
+                className="btn btn-secondary"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-black text-white rounded-md hover:bg-zinc-800"
+                className="btn btn-primary"
+                disabled={loading}
               >
-                {editingFeedbackId ? 'Update Feedback' : 'Submit Feedback'}
+                {loading ? 'Submitting...' : (editingFeedbackId ? 'Update Feedback' : 'Submit Feedback')}
               </button>
             </div>
           </form>
@@ -305,91 +321,178 @@ const StudentFeedback = () => {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b mb-6">
-        <button
-          className={`px-4 py-2 font-medium ${activeTab === 'active' ? 'text-black border-b-2 border-black' : 'text-zinc-500'}`}
-          onClick={() => setActiveTab('active')}
-        >
-          Active Feedbacks
-        </button>
-        <button
-          className={`px-4 py-2 font-medium ${activeTab === 'resolved' ? 'text-black border-b-2 border-black' : 'text-zinc-500'}`}
-          onClick={() => setActiveTab('resolved')}
-        >
-          Resolved Feedbacks
-        </button>
+      <div className="border-b border-primary-700">
+        <div className="flex flex-wrap -mb-px">
+          <button
+            className={`mr-2 py-2 px-4 border-b-2 font-medium text-sm ${
+              activeTab === 'active'
+                ? 'border-primary-500 text-primary-100'
+                : 'border-transparent text-primary-400 hover:text-primary-300 hover:border-primary-700'
+            }`}
+            onClick={() => { 
+              setActiveTab('active');
+              setSelectedFeedback(null);
+            }}
+          >
+            Active Feedbacks
+          </button>
+          
+          <button
+            className={`mr-2 py-2 px-4 border-b-2 font-medium text-sm ${
+              activeTab === 'resolved'
+                ? 'border-primary-500 text-primary-100'
+                : 'border-transparent text-primary-400 hover:text-primary-300 hover:border-primary-700'
+            }`}
+            onClick={() => { 
+              setActiveTab('resolved');
+              setSelectedFeedback(null);
+            }}
+          >
+            Resolved Feedbacks
+          </button>
+          
+          {/* Status tabs */}
+          {statusOptions.map(status => (
+            <button
+              key={status}
+              className={`mr-2 py-2 px-4 border-b-2 font-medium text-sm ${
+                activeTab === status
+                  ? 'border-primary-500 text-primary-100'
+                  : 'border-transparent text-primary-400 hover:text-primary-300 hover:border-primary-700'
+              }`}
+              onClick={() => { 
+                setActiveTab(status);
+                setSelectedFeedback(null);
+              }}
+            >
+              {status.replace('_', ' ')}
+            </button>
+          ))}
+          
+          {/* Category tabs */}
+          {categories.map(category => (
+            <button
+              key={category}
+              className={`mr-2 py-2 px-4 border-b-2 font-medium text-sm ${
+                activeTab === category
+                  ? 'border-primary-500 text-primary-100'
+                  : 'border-transparent text-primary-400 hover:text-primary-300 hover:border-primary-700'
+              }`}
+              onClick={() => { 
+                setActiveTab(category);
+                setSelectedFeedback(null);
+              }}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Feedbacks List */}
-      {loading ? (
-        <div className="text-center py-10">
-          <div className="spinner"></div>
-          <p className="mt-2 text-zinc-600">Loading feedbacks...</p>
+      {/* Main content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Feedback list */}
+        <div className="lg:col-span-1 bg-primary-800 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-primary-700">
+            <h2 className="text-lg font-semibold text-primary-100">Feedback List</h2>
+          </div>
+          
+          {loading && filteredFeedbacks.length === 0 ? (
+            <div className="p-6 text-center text-primary-300">Loading feedback...</div>
+          ) : filteredFeedbacks.length === 0 ? (
+            <div className="p-6 text-center text-primary-300">No feedback found.</div>
+          ) : (
+            <div className="overflow-y-auto max-h-[600px]">
+              <ul className="divide-y divide-primary-700">
+                {filteredFeedbacks.map(feedback => (
+                  <li 
+                    key={feedback.id}
+                    className={`p-4 cursor-pointer hover:bg-primary-700 ${
+                      selectedFeedback?.id === feedback.id ? 'bg-primary-700' : ''
+                    }`}
+                    onClick={() => handleSelectFeedback(feedback)}
+                  >
+                    <div className="flex justify-between mb-2">
+                      <h3 className="font-medium text-primary-200 truncate flex-1">
+                        {feedback.subject}
+                      </h3>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadgeClass(feedback.status)}`}>
+                        {feedback.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadgeClass(feedback.priority)}`}>
+                        {feedback.priority}
+                      </span>
+                      <p className="text-primary-400">
+                        {formatDateTime(feedback.submissionTime)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      ) : filteredFeedbacks.length === 0 ? (
-        <div className="text-center py-10 bg-zinc-50 rounded-lg">
-          <p className="text-zinc-500">No feedbacks found.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredFeedbacks.map((feedback) => (
-            <div key={feedback.id} className="bg-white p-5 rounded-lg shadow-sm border border-zinc-200">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-lg font-semibold">{feedback.subject}</h3>
-                <div className="flex space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(feedback.status)}`}>
-                    {feedback.status}
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityBadgeClass(feedback.priority)}`}>
-                    {feedback.priority}
-                  </span>
+
+        {/* Feedback details */}
+        <div className="lg:col-span-2 bg-primary-800 rounded-lg overflow-hidden">
+          {!selectedFeedback ? (
+            <div className="p-6 text-center text-primary-300">
+              {showForm ? 'Fill in the form to submit your feedback' : 'Select a feedback from the list to view details'}
+            </div>
+          ) : (
+            <div>
+              <div className="p-4 border-b border-primary-700">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-primary-100">{selectedFeedback.subject}</h2>
+                  <div className="flex space-x-2">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadgeClass(selectedFeedback.status)}`}>
+                      {selectedFeedback.status.replace('_', ' ')}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadgeClass(selectedFeedback.priority)}`}>
+                      {selectedFeedback.priority}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-sm text-primary-400">
+                  <span>Category: {selectedFeedback.category} | </span>
+                  <span>Submitted: {formatDateTime(selectedFeedback.submissionTime)}</span>
                 </div>
               </div>
               
-              <div className="mb-4">
-                <p className="text-zinc-600 mb-2">
-                  <span className="font-medium">Category:</span> {feedback.category}
-                </p>
-                <p className="text-zinc-700 whitespace-pre-line">{feedback.message}</p>
+              <div className="p-4 border-b border-primary-700">
+                <h3 className="text-md font-medium text-primary-200 mb-2">Message</h3>
+                <p className="text-primary-300 whitespace-pre-wrap">{selectedFeedback.message}</p>
               </div>
               
-              <div className="flex items-center text-sm text-zinc-500 mb-4">
-                <FaClock className="mr-1" />
-                <span>Submitted: {formatDate(feedback.submissionTime)}</span>
-              </div>
-              
-              {feedback.response && (
-                <div className="mt-4 bg-zinc-50 p-3 rounded-md">
-                  <div className="flex items-center text-zinc-700 font-medium mb-2">
-                    <FaCommentDots className="mr-2 text-black" />
-                    <span>Response from {feedback.respondedByName || 'Admin'}</span>
+              {selectedFeedback.response && (
+                <div className="p-4 border-b border-primary-700 bg-primary-750">
+                  <h3 className="text-md font-medium text-primary-200 mb-2">Response</h3>
+                  <p className="text-primary-300 whitespace-pre-wrap">{selectedFeedback.response}</p>
+                  <div className="mt-2 text-xs text-primary-400">
+                    <span>Responded by: {selectedFeedback.respondedByName || 'Admin'} | </span>
+                    <span>Time: {formatDateTime(selectedFeedback.responseTime)}</span>
                   </div>
-                  <p className="text-zinc-700 whitespace-pre-line">{feedback.response}</p>
-                  {feedback.responseTime && (
-                    <div className="mt-2 text-xs text-zinc-500">
-                      {formatDate(feedback.responseTime)}
-                    </div>
-                  )}
                 </div>
               )}
               
-              {['PENDING', 'IN_PROGRESS'].includes(feedback.status) && (
-                <div className="mt-4 flex justify-end space-x-2">
+              {['PENDING', 'IN_PROGRESS'].includes(selectedFeedback.status) && (
+                <div className="p-4 flex justify-end">
                   <button
-                    onClick={() => handleEdit(feedback)}
-                    className="p-2 text-zinc-600 hover:bg-zinc-50 rounded-md transition-colors"
-                    title="Edit feedback"
+                    onClick={() => handleEdit(selectedFeedback)}
+                    className="btn btn-secondary flex items-center"
                   >
-                    <FaEdit />
+                    <FaEdit className="mr-2" /> Edit Feedback
                   </button>
                 </div>
               )}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default StudentFeedback; 
+export default StudentFeedback;

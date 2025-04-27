@@ -4,6 +4,7 @@ import com.smartcampus.dto.CafeteriaOrderDTO;
 import com.smartcampus.dto.CafeteriaItemDTO;
 import com.smartcampus.model.CafeteriaItem;
 import com.smartcampus.model.CafeteriaOrder;
+import com.smartcampus.model.CafeteriaOrderItem;
 import com.smartcampus.model.User;
 import com.smartcampus.repository.CafeteriaItemRepository;
 import com.smartcampus.repository.CafeteriaOrderRepository;
@@ -47,7 +48,7 @@ public class CafeteriaService {
         order.setDeliveryLocation(orderDTO.getDeliveryLocation());
         order.setRemarks(orderDTO.getRemarks());
 
-        // Calculate total amount and validate items
+        // Calculate total amount and create order items
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (CafeteriaOrderDTO.OrderItemDTO itemDTO : orderDTO.getItems()) {
             CafeteriaItem item = itemRepository.findById(itemDTO.getItemId())
@@ -61,7 +62,23 @@ public class CafeteriaService {
                 throw new RuntimeException("Insufficient quantity for item: " + item.getName());
             }
 
+            // Create order item entity
+            CafeteriaOrderItem orderItem = new CafeteriaOrderItem();
+            orderItem.setOrder(order);
+            orderItem.setItem(item);
+            orderItem.setQuantity(itemDTO.getQuantity());
+            orderItem.setPrice(item.getPrice());
+            orderItem.setSpecialInstructions(itemDTO.getSpecialInstructions());
+            
+            // Add to order's items collection
+            order.getItems().add(orderItem);
+            
+            // Add to total amount
             totalAmount = totalAmount.add(item.getPrice().multiply(new BigDecimal(itemDTO.getQuantity())));
+            
+            // Optionally update item quantity
+            // item.setQuantity(item.getQuantity() - itemDTO.getQuantity());
+            // itemRepository.save(item);
         }
 
         order.setTotalAmount(totalAmount);

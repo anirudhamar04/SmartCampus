@@ -52,11 +52,27 @@ const OrderManagement = () => {
         };
       }
       
-      if (response && response.data) {
+      if (response && response.data && response.data.length > 0) {
+        // For each order, fetch the complete order details including items
+        const orderDetailsPromises = response.data.map(async (orderSummary) => {
+          try {
+            const detailResponse = await cafeteriaService.getOrderById(orderSummary.id);
+            console.log(`Order ${orderSummary.id} details:`, detailResponse.data);
+            return detailResponse.data || orderSummary;
+          } catch (err) {
+            console.error(`Error fetching details for order ${orderSummary.id}:`, err);
+            return orderSummary; // Return the summary if details fetch fails
+          }
+        });
+        
+        const ordersWithDetails = await Promise.all(orderDetailsPromises);
+        console.log('All orders with details:', ordersWithDetails);
+        
         // Sort orders by creation time - most recent first
-        const sortedOrders = response.data.sort((a, b) => {
+        const sortedOrders = ordersWithDetails.sort((a, b) => {
           return new Date(b.orderTime) - new Date(a.orderTime);
         });
+        
         setOrders(sortedOrders);
       } else {
         setOrders([]);
@@ -77,14 +93,39 @@ const OrderManagement = () => {
       
       await cafeteriaService.updateOrderStatus(orderId, newStatus);
       
-      // Update local state to reflect the change
-      setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === orderId 
-            ? { ...order, status: newStatus } 
-            : order
-        )
-      );
+      // Fetch the updated order with complete details
+      try {
+        const orderResponse = await cafeteriaService.getOrderById(orderId);
+        if (orderResponse && orderResponse.data) {
+          // Update local state with the full order details
+          setOrders(prevOrders => 
+            prevOrders.map(order => 
+              order.id === orderId 
+                ? orderResponse.data
+                : order
+            )
+          );
+        } else {
+          // Fallback if we can't get the details - just update the status
+          setOrders(prevOrders => 
+            prevOrders.map(order => 
+              order.id === orderId 
+                ? { ...order, status: newStatus } 
+                : order
+            )
+          );
+        }
+      } catch (detailErr) {
+        console.error('Error fetching updated order details:', detailErr);
+        // Fallback - just update the status
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId 
+              ? { ...order, status: newStatus } 
+              : order
+          )
+        );
+      }
       
       setSuccessMessage(`Order #${orderId} updated to ${newStatus}`);
       // Clear success message after 3 seconds
@@ -247,12 +288,16 @@ const OrderManagement = () => {
                   <td className="px-4 py-3">{formatDate(order.orderTime)}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col space-y-1">
-                      {order.items.map((item, index) => (
-                        <div key={index} className="flex items-center text-sm">
-                          <FaUtensils className="mr-2 text-primary-400" size={12} />
-                          <span>{item.quantity}x {item.itemName}</span>
-                        </div>
-                      ))}
+                      {order.items && order.items.length > 0 ? (
+                        order.items.map((item, index) => (
+                          <div key={index} className="flex items-center text-sm">
+                            <FaUtensils className="mr-2 text-primary-400" size={12} />
+                            <span>{item.quantity}x {item.itemName}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-primary-400">No items available</div>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 font-medium text-primary-200">

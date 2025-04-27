@@ -4,7 +4,6 @@ import com.smartcampus.dto.CafeteriaOrderDTO;
 import com.smartcampus.dto.CafeteriaItemDTO;
 import com.smartcampus.model.CafeteriaItem;
 import com.smartcampus.model.CafeteriaOrder;
-import com.smartcampus.model.CafeteriaOrderItem;
 import com.smartcampus.model.User;
 import com.smartcampus.repository.CafeteriaItemRepository;
 import com.smartcampus.repository.CafeteriaOrderRepository;

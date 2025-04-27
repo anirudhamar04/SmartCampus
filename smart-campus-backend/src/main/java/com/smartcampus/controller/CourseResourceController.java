@@ -1,7 +1,6 @@
 package com.smartcampus.controller;
 
 import com.smartcampus.dto.CourseResourceDTO;
-import com.smartcampus.dto.CourseDTO;
 import com.smartcampus.service.CourseResourceService;
 import com.smartcampus.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;

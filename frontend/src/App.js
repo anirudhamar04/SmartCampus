@@ -17,9 +17,12 @@ import Users from './pages/Users';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
-import AdminUsers from './pages/admin/Users';
-import AdminEnrollment from './pages/admin/Enrollment';
-import AdminFacilities from './pages/admin/Facilities';
+import AdminUsers from './pages/admin/UserManagement';
+import AdminCourses from './pages/admin/CourseManagement';
+import AdminEnrollment from './pages/admin/EnrollmentManagement';
+import AdminFacilities from './pages/admin/FacilityManagement';
+import AdminTeacherAssignment from './pages/admin/TeacherAssignment';
+import AdminAnalytics from './pages/admin/Analytics';
 
 // Teacher Pages
 import TeacherDashboard from './pages/teacher/Dashboard';
@@ -107,8 +110,11 @@ const App = () => {
       }>
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/courses" element={<AdminCourses />} />
         <Route path="/admin/enrollment" element={<AdminEnrollment />} />
         <Route path="/admin/facilities" element={<AdminFacilities />} />
+        <Route path="/admin/teacher-assignment" element={<AdminTeacherAssignment />} />
+        <Route path="/admin/analytics" element={<AdminAnalytics />} />
       </Route>
       
       {/* Protected Routes - Common */}

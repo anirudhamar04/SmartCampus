@@ -188,12 +188,20 @@ export const facilityService = {
   create: (data) => api.post('/facilities', data),
   update: (id, data) => api.put(`/facilities/${id}`, data),
   book: (facilityId, data) => api.post(`/facilities/${facilityId}/bookings`, data),
-  getBookings: (facilityId) => api.get(`/facilities/${facilityId}/bookings`),
+  getBookings: (facilityId) => {
+    // If facilityId is provided, get bookings for that facility
+    // Otherwise, use the admin endpoint for all bookings
+    return facilityId 
+      ? api.get(`/facilities/${facilityId}/bookings`) 
+      : api.get('/facility-bookings/all'); // Admin endpoint for all bookings
+  },
+  getAllBookings: () => api.get('/facility-bookings/all'), // Explicit admin endpoint for all bookings
   getMyBookings: (userId) => api.get(`/facility-bookings/teacher/${userId}`),
   createBooking: (data) => api.post('/facility-bookings', data),
   updateBooking: (id, data) => api.put(`/facility-bookings/${id}`, data),
   deleteBooking: (id) => api.delete(`/facility-bookings/${id}`),
-  cancelBooking: (bookingId) => api.delete(`/facilities/bookings/${bookingId}`)
+  cancelBooking: (bookingId) => api.delete(`/facilities/bookings/${bookingId}`),
+  delete: (id) => api.delete(`/facilities/${id}`)
 };
 
 // Cafeteria services

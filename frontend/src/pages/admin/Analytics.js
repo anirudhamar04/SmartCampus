@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { userService, courseService, facilityService } from '../../services/api';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 
 const Analytics = () => {
+  const auth = useAuth();
+  const currentUser = auth.currentUser;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
@@ -15,24 +18,130 @@ const Analytics = () => {
   const [courseDistribution, setCourseDistribution] = useState([]);
   const [facilityUsage, setFacilityUsage] = useState([]);
   const [enrollmentTrends, setEnrollmentTrends] = useState([]);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+
+  // Set up axios interceptor to ensure auth headers are always included
+  useEffect(() => {
+    // Set up a direct API check to confirm admin rights and fix permissions
+    const checkAdminPermissions = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          // Set default auth headers for all requests
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error('Error setting default headers:', error);
+      }
+    };
+    
+    checkAdminPermissions();
+    
+    // Configure axios to always include auth token
+    const interceptor = axios.interceptors.request.use(
+      config => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+      },
+      error => Promise.reject(error)
+    );
+    
+    // Clean up interceptor on component unmount
+    return () => {
+      axios.interceptors.request.eject(interceptor);
+    };
+  }, []);
 
   useEffect(() => {
-    fetchAnalyticsData();
-  }, []);
+    console.log('Auth context:', auth);
+    if (currentUser) {
+      // Check if the user has admin privileges
+      if (currentUser.role === 'ADMIN') {
+        console.log('User has ADMIN role, proceeding with data fetch');
+        fetchAnalyticsData();
+      } else {
+        setError('Access denied. Only administrators can access this page.');
+        setLoading(false);
+      }
+    } else {
+      setError('Authentication required. Please log in.');
+      setLoading(false);
+    }
+  }, [currentUser, retryCount]);
+
+  const getAuthToken = () => {
+    // Helper function to get token consistently
+    return localStorage.getItem('token');
+  };
+
+  const handleApiError = (error, defaultMessage) => {
+    setLoading(false);
+    if (error.response) {
+      // Log detailed error information for debugging
+      console.error('API Error Details:', {
+        status: error.response.status,
+        headers: error.response.headers,
+        data: error.response.data
+      });
+      
+      // Handle specific status codes
+      switch (error.response.status) {
+        case 401:
+          setError('Your session has expired. Please log in again.');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+          break;
+        case 403:
+          setError('Access denied. You do not have permission to perform this action. Please ensure you have admin privileges.');
+          break;
+        case 404:
+          setError('The requested resource was not found.');
+          break;
+        case 500:
+          setError('Server error. Please try again later.');
+          break;
+        default:
+          setError(error.response.data?.message || defaultMessage);
+      }
+    } else if (error.request) {
+      // Network error
+      setError('Network error. Please check your connection and try again.');
+    } else {
+      setError(error.message || defaultMessage);
+    }
+  };
 
   const fetchAnalyticsData = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
-      // Fetch user statistics
-      const usersResponse = await userService.getAll();
+      // Get token from localStorage
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error('Authentication required. Please log in.');
+      }
+      
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      // Fetch user statistics using direct axios call
+      const usersResponse = await axios.get('http://localhost:8080/api/users', { headers });
       const users = usersResponse.data || [];
       
       const studentCount = users.filter(user => user.role === 'STUDENT').length;
-      const teacherCount = users.filter(user => user.role === 'TEACHER').length;
+      const teacherCount = users.filter(user => user.role === 'TEACHER' || user.role === 'FACULTY').length;
       const adminCount = users.filter(user => user.role === 'ADMIN').length;
       
-      // Fetch course statistics
-      const coursesResponse = await courseService.getAll();
+      // Fetch course statistics using direct axios call
+      const coursesResponse = await axios.get('http://localhost:8080/api/courses', { headers });
       const courses = coursesResponse.data || [];
       
       const now = new Date();
@@ -59,27 +168,44 @@ const Analytics = () => {
       });
       const avgEnrollment = courses.length ? (totalEnrollment / courses.length).toFixed(1) : 0;
       
-      // Fetch facility statistics
-      const facilitiesResponse = await facilityService.getAllFacilities();
+      // Fetch facility statistics using direct axios call
+      const facilitiesResponse = await axios.get('http://localhost:8080/api/facilities', { headers });
       const facilities = facilitiesResponse.data || [];
       
       const availableCount = facilities.filter(f => f.status === 'AVAILABLE').length;
       const bookedCount = facilities.filter(f => f.status === 'BOOKED').length;
       const maintenanceCount = facilities.filter(f => f.status === 'MAINTENANCE').length;
       
-      // Fetch booking statistics
-      const bookingsResponse = await facilityService.getBookings();
-      const bookings = bookingsResponse.data || [];
+      // Fetch booking statistics - try different possible endpoints
+      let bookings = [];
+      try {
+        // Try facility-bookings first
+        const bookingsResponse = await axios.get('http://localhost:8080/api/facility-bookings', { headers });
+        bookings = bookingsResponse.data || [];
+      } catch (bookingError) {
+        console.error('Error fetching from facility-bookings endpoint:', bookingError);
+        
+        try {
+          // Try alternative endpoint
+          const alternateResponse = await axios.get('http://localhost:8080/api/bookings', { headers });
+          bookings = alternateResponse.data || [];
+        } catch (alternateError) {
+          console.error('Error fetching from alternate bookings endpoint:', alternateError);
+          bookings = []; // Use empty array if both fail
+        }
+      }
       
       // Calculate facility usage
       const facilityUsageData = facilities
         .filter(f => f.id) // Ensure we have valid facilities
         .map(facility => {
-          const facilityBookings = bookings.filter(b => b.facilityId === facility.id).length;
+          const facilityBookings = bookings.filter(b => b.facilityId === facility.id || 
+                                                       (b.facility && b.facility.id === facility.id)).length;
           return {
             name: facility.name,
             bookings: facilityBookings,
-            utilization: facilityBookings > 0 ? (facilityBookings / bookings.length * 100).toFixed(1) : 0
+            utilization: facilityBookings > 0 && bookings.length > 0 ? 
+                         (facilityBookings / bookings.length * 100).toFixed(1) : 0
           };
         })
         .sort((a, b) => b.bookings - a.bookings)
@@ -99,7 +225,7 @@ const Analytics = () => {
         .map(([name, count]) => ({
           name,
           count,
-          percentage: (count / courses.length * 100).toFixed(1)
+          percentage: courses.length ? (count / courses.length * 100).toFixed(1) : 0
         }))
         .sort((a, b) => b.count - a.count);
       
@@ -130,12 +256,12 @@ const Analytics = () => {
       const lastMonthStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
       
       const thisMonthBookings = bookings.filter(booking => {
-        const bookingDate = new Date(booking.startTime);
+        const bookingDate = new Date(booking.startTime || booking.date);
         return bookingDate >= thisMonthStart;
       }).length;
       
       const lastMonthBookings = bookings.filter(booking => {
-        const bookingDate = new Date(booking.startTime);
+        const bookingDate = new Date(booking.startTime || booking.date);
         return bookingDate >= lastMonthStart && bookingDate < thisMonthStart;
       }).length;
       
@@ -192,13 +318,39 @@ const Analytics = () => {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
-      setError('Failed to load analytics data. Please try again later.');
-      setLoading(false);
+      handleApiError(error, 'Failed to load analytics data. Please try again later.');
     }
   };
 
   const handleTimeframeChange = (e) => {
     setTimeframe(e.target.value);
+  };
+
+  const handleRetry = () => {
+    if (retryCount < MAX_RETRIES) {
+      setRetryCount(prevCount => prevCount + 1);
+    }
+  };
+
+  const handleLogin = () => {
+    // Redirect to login page
+    window.location.href = '/login';
+  };
+
+  const handleRefreshToken = async () => {
+    try {
+      // Try to refresh the token
+      if (auth.refreshToken) {
+        await auth.refreshToken();
+      } else {
+        // Force a refresh to get a new token
+        window.location.reload();
+      }
+      setRetryCount(prevCount => prevCount + 1);
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      handleLogin();
+    }
   };
 
   const renderBarChart = (data, valueKey, labelKey, colorClass = "bg-blue-500") => {
@@ -316,7 +468,34 @@ const Analytics = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-300"></div>
         </div>
       ) : error ? (
-        <div className="text-red-500 text-center p-4">{error}</div>
+        <div className="bg-red-900 text-red-300 text-center p-4 rounded mb-4">
+          <p className="mb-2">{error}</p>
+          <div className="flex justify-center space-x-4 mt-3">
+            <button 
+              onClick={handleRetry} 
+              disabled={retryCount >= MAX_RETRIES}
+              className="px-4 py-2 bg-primary-700 hover:bg-primary-600 rounded text-primary-100 disabled:opacity-50"
+            >
+              {retryCount >= MAX_RETRIES ? 'Max retries reached' : 'Retry'}
+            </button>
+            {error.includes('Access denied') && (
+              <>
+                <button 
+                  onClick={handleRefreshToken}
+                  className="px-4 py-2 bg-green-700 hover:bg-green-600 rounded text-green-100"
+                >
+                  Refresh Access
+                </button>
+                <button 
+                  onClick={handleLogin}
+                  className="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded text-blue-100"
+                >
+                  Return to Login
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       ) : (
         <>
           {/* Top Stats */}
@@ -380,77 +559,6 @@ const Analytics = () => {
               }
               trendUp={stats.bookings.thisMonth >= stats.bookings.lastMonth}
             />
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Enrollment Trends */}
-            <div className="card p-6 col-span-2">
-              <h2 className="text-lg font-semibold text-primary-100 mb-4">Enrollment Trends</h2>
-              {renderTrendChart(enrollmentTrends)}
-            </div>
-            
-            {/* User Distribution */}
-            <div className="card p-6">
-              <h2 className="text-lg font-semibold text-primary-100 mb-4">User Distribution</h2>
-              <div className="flex justify-center mb-6">
-                <div className="relative w-40 h-40">
-                  {/* Simple donut chart representation */}
-                  <svg viewBox="0 0 36 36" className="w-full h-full">
-                    {/* Students section (blue) */}
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="3"
-                      strokeDasharray={`${stats.users.students / stats.users.total * 100}, 100`}
-                      strokeLinecap="round"
-                      transform="rotate(-90, 18, 18)"
-                    />
-                    {/* Teachers section (green) */}
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="#10b981"
-                      strokeWidth="3"
-                      strokeDasharray={`${stats.users.teachers / stats.users.total * 100}, 100`}
-                      strokeLinecap="round"
-                      transform={`rotate(${stats.users.students / stats.users.total * 360 - 90}, 18, 18)`}
-                    />
-                    {/* Admins section (purple) */}
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="#8b5cf6"
-                      strokeWidth="3"
-                      strokeDasharray={`${stats.users.admins / stats.users.total * 100}, 100`}
-                      strokeLinecap="round"
-                      transform={`rotate(${(stats.users.students + stats.users.teachers) / stats.users.total * 360 - 90}, 18, 18)`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-primary-100">{stats.users.total}</p>
-                      <p className="text-xs text-primary-400">Total Users</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                  <span className="text-primary-300 text-sm">{stats.users.students} Students ({(stats.users.students / stats.users.total * 100).toFixed(1)}%)</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                  <span className="text-primary-300 text-sm">{stats.users.teachers} Teachers ({(stats.users.teachers / stats.users.total * 100).toFixed(1)}%)</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                  <span className="text-primary-300 text-sm">{stats.users.admins} Admins ({(stats.users.admins / stats.users.total * 100).toFixed(1)}%)</span>
-                </div>
-              </div>
-            </div>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

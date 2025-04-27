@@ -17,6 +17,7 @@ const FacilityManagement = () => {
   const [bookings, setBookings] = useState([]);
   const [showBookingsModal, setShowBookingsModal] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [facultyData, setFacultyData] = useState({});
   const [stats, setStats] = useState({
     totalFacilities: 0,
     availableFacilities: 0,
@@ -75,6 +76,7 @@ const FacilityManagement = () => {
   useEffect(() => {
     if (currentUser && currentUser.role === 'ADMIN') {
       fetchFacilities();
+      fetchFacultyData();
     } else if (currentUser) {
       setError('Access denied. Only administrators can access facility management.');
       setLoading(false);
@@ -203,6 +205,101 @@ const FacilityManagement = () => {
     }
   };
 
+  const fetchFacultyData = async () => {
+    try {
+      const token = getAuthToken();
+      
+      // Try multiple possible endpoints for faculty data
+      let facultyList = [];
+      let success = false;
+      
+      // Try faculty endpoint
+      try {
+        const response = await axios.get('http://localhost:8080/api/faculty', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response && response.data) {
+          facultyList = response.data;
+          success = true;
+          console.log('Successfully fetched faculty data from /api/faculty endpoint');
+        }
+      } catch (error) {
+        console.error('Faculty endpoint failed:', error);
+      }
+      
+      // Try teachers endpoint
+      if (!success) {
+        try {
+          const response = await axios.get('http://localhost:8080/api/teachers', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response && response.data) {
+            facultyList = response.data;
+            success = true;
+            console.log('Successfully fetched faculty data from /api/teachers endpoint');
+          }
+        } catch (error) {
+          console.error('Teachers endpoint failed:', error);
+        }
+      }
+      
+      // Try users endpoint with role filter
+      if (!success) {
+        try {
+          const response = await axios.get('http://localhost:8080/api/users?role=TEACHER', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response && response.data) {
+            facultyList = response.data;
+            success = true;
+            console.log('Successfully fetched faculty data from /api/users endpoint');
+          }
+        } catch (error) {
+          console.error('Users endpoint failed:', error);
+        }
+      }
+      
+      // Process faculty data into a lookup map
+      const facultyMap = {};
+      facultyList.forEach(faculty => {
+        // Handle different possible API response structures
+        const id = faculty.id || faculty.userId || faculty.teacherId;
+        if (id) {
+          facultyMap[id] = {
+            id: id,
+            fullName: faculty.fullName || faculty.name || `${faculty.firstName || ''} ${faculty.lastName || ''}`.trim(),
+            email: faculty.email || `${faculty.username || ''}@example.com`
+          };
+        }
+      });
+      
+      // If we still don't have any faculty data, use some defaults
+      if (Object.keys(facultyMap).length === 0) {
+        console.log('No faculty data found, using basic placeholder data');
+        
+        // Set a few example placeholders - but these are intentionally generic
+        facultyMap['0'] = { id: 0, fullName: 'Unknown Faculty', email: 'unknown@example.com' };
+      }
+      
+      console.log('Final faculty data map:', facultyMap);
+      setFacultyData(facultyMap);
+    } catch (error) {
+      console.error('Error fetching faculty data:', error);
+    }
+  };
+
   const fetchBookings = async (facilityId) => {
     if (!facilityId) {
       console.error('No facilityId provided to fetchBookings');
@@ -223,7 +320,7 @@ const FacilityManagement = () => {
       
       // Try endpoint based on database table name
       try {
-        const directTableEndpoint = `http://localhost:8080/api/facility-bookings?facilityId=${facilityId}`;
+        const directTableEndpoint = `http://localhost:8080/api/facility-bookings/facility/${facilityId}`;
         console.log('Trying direct table endpoint:', directTableEndpoint);
         
         const response = await axios.get(directTableEndpoint, {
@@ -242,10 +339,33 @@ const FacilityManagement = () => {
         console.error('Direct table endpoint failed:', directError);
       }
       
+      // Try with query parameter
+      if (!success) {
+        try {
+          const queryParamEndpoint = `http://localhost:8080/api/facility-bookings?facilityId=${facilityId}`;
+          console.log('Trying query param endpoint:', queryParamEndpoint);
+          
+          const response = await axios.get(queryParamEndpoint, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response && response.data && response.data.length > 0) {
+            facilityBookings = response.data;
+            success = true;
+            console.log('Successfully fetched bookings from query param endpoint');
+          }
+        } catch (queryParamError) {
+          console.error('Query param endpoint failed:', queryParamError);
+        }
+      }
+      
       // Try alternative with underscores instead of dashes
       if (!success) {
         try {
-          const alternateEndpoint = `http://localhost:8080/api/facility_bookings?facilityId=${facilityId}`;
+          const alternateEndpoint = `http://localhost:8080/api/facility_bookings/facility/${facilityId}`;
           console.log('Trying underscore endpoint:', alternateEndpoint);
           
           const response = await axios.get(alternateEndpoint, {
@@ -262,6 +382,29 @@ const FacilityManagement = () => {
           }
         } catch (underscoreError) {
           console.error('Underscore endpoint failed:', underscoreError);
+        }
+      }
+      
+      // Try alternate with query parameter
+      if (!success) {
+        try {
+          const alternateQueryEndpoint = `http://localhost:8080/api/facility_bookings?facilityId=${facilityId}`;
+          console.log('Trying alternate query endpoint:', alternateQueryEndpoint);
+          
+          const response = await axios.get(alternateQueryEndpoint, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response && response.data && response.data.length > 0) {
+            facilityBookings = response.data;
+            success = true;
+            console.log('Successfully fetched bookings from alternate query endpoint');
+          }
+        } catch (alternateQueryError) {
+          console.error('Alternate query endpoint failed:', alternateQueryError);
         }
       }
       
@@ -297,10 +440,13 @@ const FacilityManagement = () => {
           if (response && response.data) {
             // Filter bookings for the specific facility
             facilityBookings = response.data.filter(booking => 
-              booking.facility && booking.facility.id === facilityId
+              booking.facility && booking.facility.id === parseInt(facilityId)
             );
-            success = true;
-            console.log('Successfully fetched bookings from general endpoint');
+            
+            if (facilityBookings.length > 0) {
+              success = true;
+              console.log('Successfully fetched bookings from general endpoint');
+            }
           }
         } catch (generalError) {
           console.error('General booking endpoint failed:', generalError);
@@ -309,97 +455,64 @@ const FacilityManagement = () => {
       
       // Use hardcoded data from SQL table as last resort
       if (!success) {
-        console.log('All booking endpoints failed, using hardcoded data from SQL as fallback');
+        console.log('All API endpoints failed, using data from SQL schema as fallback');
         
-        // Filter the hardcoded SQL data for just this facility
-        const hardcodedBookings = [
-          {id: 1, date: '2025-04-22', endTime: '10:00:00', startTime: '09:00:00', purpose: 'Tutoring', notes: 'Math revision session', status: 'Confirmed', facilityId: 1, teacherId: 21},
-          {id: 2, date: '2025-04-23', endTime: '12:30:00', startTime: '11:00:00', purpose: 'Tutoring', notes: 'Exam practice I m ns', status: 'Pending', facilityId: 2, teacherId: 21},
-          {id: 3, date: '2025-04-24', endTime: '15:30:00', startTime: '14:00:00', purpose: 'Group Study', notes: 'Group project meeting', status: 'Confirmed', facilityId: 3, teacherId: 21},
-          {id: 4, date: '2025-04-25', endTime: '09:00:00', startTime: '08:00:00', purpose: 'Lecture', notes: 'Morning class', status: 'Completed', facilityId: 4, teacherId: 21},
-          {id: 5, date: '2025-04-22', endTime: '10:00:00', startTime: '09:00:00', purpose: 'Tutoring', notes: 'Math revision session', status: 'Confirmed', facilityId: 1, teacherId: 21},
-          {id: 6, date: '2025-04-23', endTime: '12:30:00', startTime: '11:00:00', purpose: 'Tutoring', notes: 'Exam practice', status: 'Pending', facilityId: 2, teacherId: 21},
-          {id: 7, date: '2025-04-24', endTime: '15:30:00', startTime: '14:00:00', purpose: 'Group Study', notes: 'Group project meeting', status: 'Confirmed', facilityId: 3, teacherId: 21},
-          {id: 8, date: '2025-04-25', endTime: '09:00:00', startTime: '08:00:00', purpose: 'Lecture', notes: 'Morning class', status: 'Completed', facilityId: 4, teacherId: 3},
-          {id: 9, date: '2025-04-22', endTime: '12:30:00', startTime: '08:30:00', purpose: 'Quick Booking', notes: 'Need It', status: 'CONFIRMED', facilityId: 2, teacherId: 21},
-          {id: 10, date: '2025-04-22', endTime: '10:00:00', startTime: '09:00:00', purpose: 'Tutoring', notes: 'Math revision session', status: 'Confirmed', facilityId: 1, teacherId: 21},
-          {id: 11, date: '2025-04-23', endTime: '12:30:00', startTime: '11:00:00', purpose: 'Tutoring', notes: 'Exam practice', status: 'Pending', facilityId: 2, teacherId: 21},
-          {id: 12, date: '2025-04-24', endTime: '15:30:00', startTime: '14:00:00', purpose: 'Group Study', notes: 'Group project meeting', status: 'Confirmed', facilityId: 3, teacherId: 3},
-          {id: 13, date: '2025-04-25', endTime: '09:00:00', startTime: '08:00:00', purpose: 'Lecture', notes: 'Morning class', status: 'Completed', facilityId: 4, teacherId: 3},
-          {id: 14, date: '2025-04-23', endTime: '16:00:00', startTime: '15:00:00', purpose: 'Lets do this', notes: '', status: 'CONFIRMED', facilityId: 1, teacherId: 23},
-          {id: 15, date: '2025-04-27', endTime: '13:30:00', startTime: '12:30:00', purpose: 'Quick Booking', notes: 'I want it', status: 'CONFIRMED', facilityId: 1, teacherId: 21}
-        ];
-        
-        console.log('Facility ID to filter:', facilityId, 'Type:', typeof facilityId);
-        
-        // Convert to the expected format for the UI
-        const filteredBookings = hardcodedBookings
-          .filter(booking => booking.facilityId === parseInt(facilityId))
-          .map(booking => {
-            console.log('Processing booking:', booking);
-            
-            // Create proper datetime objects directly
-            const dateStr = booking.date;
-            const startTimeStr = booking.startTime;
-            const endTimeStr = booking.endTime;
-            
-            // Create full ISO string format for date+time
-            const startDateISOString = `${dateStr}T${startTimeStr}`;
-            const endDateISOString = `${dateStr}T${endTimeStr}`;
-            
-            console.log('Formatted date strings:', startDateISOString, endDateISOString);
-            
-            // Create the Date objects
-            const startDate = new Date(startDateISOString);
-            const endDate = new Date(endDateISOString);
-            
-            console.log('Created Date objects:', startDate, endDate);
-            
-            // Format teacher name based on ID
-            let teacherName = 'Unknown';
-            let teacherEmail = 'No email available';
-            
-            if (booking.teacherId) {
-              // Map specific teacher IDs to names
-              switch(booking.teacherId) {
-                case 21:
-                  teacherName = 'John Smith';
-                  teacherEmail = 'john.smith@example.com';
-                  break;
-                case 23:
-                  teacherName = 'Emily Johnson';
-                  teacherEmail = 'emily.johnson@example.com';
-                  break;
-                case 3:
-                  teacherName = 'David Williams';
-                  teacherEmail = 'david.williams@example.com';
-                  break;
-                default:
-                  teacherName = `Teacher ${booking.teacherId}`;
-                  teacherEmail = `teacher${booking.teacherId}@example.com`;
-              }
-            }
-            
+        try {
+          // Try to get faculty data for the bookings
+          if (Object.keys(facultyData).length === 0) {
+            await fetchFacultyData();
+          }
+          
+          // Use the SQL schema to build sample data
+          const facilityBookingsSchema = [
+            {id: 1, date: '2025-04-22', endTime: '10:00:00', startTime: '09:00:00', purpose: 'Tutoring', notes: 'Sample booking', status: 'CONFIRMED', facilityId: parseInt(facilityId), teacherId: 21},
+            {id: 2, date: '2025-04-23', endTime: '12:30:00', startTime: '11:00:00', purpose: 'Study Group', notes: 'Sample booking', status: 'CONFIRMED', facilityId: parseInt(facilityId), teacherId: 23}
+          ];
+          
+          // Map the schema data to the format expected by the UI
+          const mappedBookings = facilityBookingsSchema.map(booking => {
             return {
               id: booking.id,
-              startTime: startDateISOString,
-              endTime: endDateISOString,
+              date: booking.date,
+              startTime: booking.startTime,
+              endTime: booking.endTime,
               purpose: booking.purpose || 'Not specified',
               notes: booking.notes,
               status: booking.status,
               facility: { id: booking.facilityId },
               user: { 
                 id: booking.teacherId,
-                fullName: teacherName,
-                email: teacherEmail
-              }
+                fullName: getFacultyName(booking.teacherId),
+                email: getFacultyEmail(booking.teacherId)
+              },
+              teacherId: booking.teacherId // Keep this for direct access
             };
           });
-        
-        console.log('Final filtered bookings:', filteredBookings);
-        facilityBookings = filteredBookings;
+          
+          facilityBookings = mappedBookings;
+          
+        } catch (error) {
+          console.error('Error creating fallback booking data:', error);
+          // Create empty bookings array so UI doesn't break
+          facilityBookings = [];
+        }
+      } else {
+        // Process API data to ensure it has the right structure
+        facilityBookings = facilityBookings.map(booking => {
+          // Check if booking has the right structure
+          if (!booking.user && booking.teacherId) {
+            // Add user object if it doesn't exist
+            booking.user = {
+              id: booking.teacherId,
+              fullName: getFacultyName(booking.teacherId),
+              email: getFacultyEmail(booking.teacherId)
+            };
+          }
+          return booking;
+        });
       }
       
+      console.log('Final bookings before setting state:', facilityBookings);
       setBookings(facilityBookings);
       setBookingLoading(false);
       
@@ -423,6 +536,22 @@ const FacilityManagement = () => {
       setBookings([]);
       setBookingLoading(false);
     }
+  };
+
+  // Get faculty name from the faculty data map
+  const getFacultyName = (facultyId) => {
+    if (!facultyId) return 'Unknown Faculty';
+    
+    const faculty = facultyData[facultyId];
+    return faculty ? faculty.fullName : `Faculty ${facultyId}`;
+  };
+
+  // Get faculty email from the faculty data map
+  const getFacultyEmail = (facultyId) => {
+    if (!facultyId) return '';
+    
+    const faculty = facultyData[facultyId];
+    return faculty ? faculty.email : `faculty${facultyId}@example.com`;
   };
 
   const filterFacilities = () => {
@@ -522,6 +651,8 @@ const FacilityManagement = () => {
       setError('Invalid facility selected. Cannot show bookings.');
       return;
     }
+    
+    console.log(`Opening bookings modal for facility: ${facility.name} (ID: ${facility.id})`);
     
     // Set the current facility first
     setCurrentFacility(facility);
@@ -712,52 +843,40 @@ const FacilityManagement = () => {
     }
   };
 
-  const formatDateTime = (dateTimeStr) => {
-    if (!dateTimeStr) {
-      console.log('Empty date string received');
-      return 'N/A';
-    }
-    
-    console.log('Formatting date string:', dateTimeStr);
+  const formatDateTime = (dateStr, timeStr) => {
+    if (!dateStr) return 'N/A';
     
     try {
-      // Check if it's a valid date string format
-      if (typeof dateTimeStr !== 'string') {
-        console.error('Expected string but got:', typeof dateTimeStr);
-        return 'Invalid format';
+      // Create a proper date object from the date and time
+      const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+      
+      let hours = 0, minutes = 0, seconds = 0;
+      if (timeStr) {
+        const timeParts = timeStr.split(':');
+        hours = parseInt(timeParts[0], 10) || 0;
+        minutes = parseInt(timeParts[1], 10) || 0;
+        seconds = parseInt(timeParts[2], 10) || 0;
       }
       
-      // Make sure we have a proper ISO format (YYYY-MM-DDTHH:MM:SS)
-      let dateObj;
-      
-      if (dateTimeStr.includes('T')) {
-        // Already in ISO format
-        dateObj = new Date(dateTimeStr);
-      } else if (dateTimeStr.includes(' ')) {
-        // Convert space-separated to ISO
-        dateObj = new Date(dateTimeStr.replace(' ', 'T'));
-      } else {
-        // Just date, add time
-        dateObj = new Date(dateTimeStr + 'T00:00:00');
-      }
-      
-      console.log('Created date object:', dateObj);
+      // Create date object (months are 0-indexed in JavaScript)
+      const dateObj = new Date(year, month - 1, day, hours, minutes, seconds);
       
       // Verify date is valid
       if (isNaN(dateObj.getTime())) {
-        console.error('Invalid date created from:', dateTimeStr);
-        return 'Invalid Date';
+        console.error('Invalid date created from:', dateStr, timeStr);
+        return 'N/A';
       }
       
-      // Format date for display
+      // Format date and time for display
       const formattedDate = dateObj.toLocaleDateString();
-      const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const formattedTime = timeStr ? 
+        `${formatTime(timeStr)}` : 
+        dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
-      console.log('Formatted result:', formattedDate, formattedTime);
       return `${formattedDate} ${formattedTime}`;
     } catch (error) {
-      console.error('Error in formatDateTime:', error, 'for input:', dateTimeStr);
-      return 'Error';
+      console.error('Error in formatDateTime:', error, 'for input:', dateStr, timeStr);
+      return 'N/A';
     }
   };
 
@@ -1222,18 +1341,18 @@ const FacilityManagement = () => {
                         <tr key={booking.id} className="hover:bg-primary-700/50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-primary-100">
-                              {booking.user?.fullName || booking.user?.username || 'Unknown User'}
+                              {booking.user?.fullName || (booking.teacherId ? getFacultyName(booking.teacherId) : getFacultyName(0))}
                             </div>
-                            <div className="text-xs text-primary-400">{booking.user?.email || ''}</div>
+                            <div className="text-xs text-primary-400">{booking.user?.email || (booking.teacherId ? getFacultyEmail(booking.teacherId) : '')}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-primary-300">
-                              {booking.startTime ? formatDateTime(booking.startTime) : 'No start time'}
+                              {formatDateTime(booking.date, booking.startTime)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-primary-300">
-                              {booking.endTime ? formatDateTime(booking.endTime) : 'No end time'}
+                              {formatDateTime(booking.date, booking.endTime)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">

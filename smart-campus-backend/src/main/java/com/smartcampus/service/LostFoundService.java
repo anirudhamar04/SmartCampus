@@ -25,6 +25,15 @@ public class LostFoundService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Get all lost and found items
+     */
+    public List<LostFoundItemDTO> getAllItems() {
+        return lostFoundItemRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
     @Transactional
     public LostFoundItemDTO reportLostItem(LostFoundItemDTO itemDTO) {
         User foundBy = userRepository.findById(itemDTO.getFoundById())
@@ -70,6 +79,11 @@ public class LostFoundService {
         item.setCategory(itemDTO.getCategory());
         item.setImageUrl(itemDTO.getImageUrl());
         item.setVerificationDetails(itemDTO.getVerificationDetails());
+        
+        // Update status if it's changed
+        if (itemDTO.getStatus() != null && !itemDTO.getStatus().equals(item.getStatus())) {
+            item.setStatus(itemDTO.getStatus());
+        }
 
         LostFoundItem updatedItem = lostFoundItemRepository.save(item);
         return convertToDTO(updatedItem);

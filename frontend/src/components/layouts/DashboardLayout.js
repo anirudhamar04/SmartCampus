@@ -123,6 +123,12 @@ const DashboardLayout = () => {
       { to: '/student/cafeteria', label: 'Cafeteria', icon: <CafeteriaIcon /> },
       { to: '/profile', label: 'Profile', icon: <ProfileIcon /> },
     ];
+  } else if (userRole === 'STAFF') {
+    navLinks = [
+      { to: '/staff/dashboard', label: 'Dashboard', icon: <HomeIcon /> },
+      { to: '/staff/orders', label: 'Manage Orders', icon: <CafeteriaIcon /> },
+      { to: '/profile', label: 'Profile', icon: <ProfileIcon /> },
+    ];
   }
 
   return (

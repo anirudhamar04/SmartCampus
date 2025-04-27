@@ -208,4 +208,13 @@ export const cafeteriaService = {
   updateOrderStatus: (id, status) => api.put(`/cafeteria/orders/${id}/status?status=${status}`)
 };
 
+// Add the lostAndFoundService to the exports
+export const lostAndFoundService = {
+  getAllItems: () => api.get('/lost-found/items'),
+  getMyItems: (userId) => api.get(`/lost-found/user/${userId}`),
+  addItem: (itemData) => api.post('/lost-found/items', itemData),
+  updateItem: (id, itemData) => api.put(`/lost-found/items/${id}`, itemData),
+  claimItem: (id, claimData) => api.post(`/lost-found/items/${id}/claim`, claimData),
+};
+
 export default api; 

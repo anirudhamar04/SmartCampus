@@ -11,9 +11,15 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 // Protected Pages
-import Dashboard from './pages/Dashboard';
+//import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Users from './pages/Users';
+
+// Admin Pages
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminUsers from './pages/admin/Users';
+import AdminEnrollment from './pages/admin/Enrollment';
+import AdminFacilities from './pages/admin/Facilities';
 
 // Teacher Pages
 import TeacherDashboard from './pages/teacher/Dashboard';
@@ -32,6 +38,11 @@ import StudentEvents from './pages/student/Events';
 import StudentFeedback from './pages/student/Feedback';
 import StudentFacilityBooking from './pages/student/FacilityBooking';
 import StudentCafeteria from './pages/student/Cafeteria';
+import LostAndFound from './pages/student/LostAndFound';
+
+// Staff Pages
+import StaffDashboard from './pages/staff/Dashboard';
+import OrderManagement from './pages/staff/OrderManagement';
 
 // Error Pages
 import NotFound from './pages/NotFound';
@@ -54,6 +65,28 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   return children;
 };
 
+// Home route component that redirects to role-specific dashboard
+const HomeRedirect = () => {
+  const { userRole, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  switch (userRole) {
+    case 'ADMIN':
+      return <Navigate to="/admin/dashboard" />;
+    case 'FACULTY':
+      return <Navigate to="/teacher/dashboard" />;
+    case 'STUDENT':
+      return <Navigate to="/student/dashboard" />;
+    case 'STAFF':
+      return <Navigate to="/staff/dashboard" />;
+    default:
+      return <Navigate to="/profile" />;
+  }
+};
+
 const App = () => {
   return (
     <Routes>
@@ -63,13 +96,27 @@ const App = () => {
         <Route path="/register" element={<Register />} />
       </Route>
       
-      {/* Protected Routes - Admin & Common */}
+      {/* Root Route with Role-based Redirect */}
+      <Route path="/" element={<HomeRedirect />} />
+      
+      {/* Protected Routes - Admin */}
+      <Route element={
+        <ProtectedRoute allowedRoles={['ADMIN']}>
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/enrollment" element={<AdminEnrollment />} />
+        <Route path="/admin/facilities" element={<AdminFacilities />} />
+      </Route>
+      
+      {/* Protected Routes - Common */}
       <Route element={
         <ProtectedRoute>
           <DashboardLayout />
         </ProtectedRoute>
       }>
-        <Route path="/" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/users" element={<Users />} />
       </Route>
@@ -102,6 +149,17 @@ const App = () => {
         <Route path="/student/feedback" element={<StudentFeedback />} />
         <Route path="/student/facilities" element={<StudentFacilityBooking />} />
         <Route path="/student/cafeteria" element={<StudentCafeteria />} />
+        <Route path="/student/lost-and-found" element={<LostAndFound />} />
+      </Route>
+      
+      {/* Staff Routes */}
+      <Route element={
+        <ProtectedRoute allowedRoles={['STAFF']}>
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route path="/staff/dashboard" element={<StaffDashboard />} />
+        <Route path="/staff/orders" element={<OrderManagement />} />
       </Route>
       
       {/* Error Routes */}

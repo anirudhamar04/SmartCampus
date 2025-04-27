@@ -135,7 +135,7 @@ const TeacherAssignment = () => {
       
       // Now try to get teachers
       try {
-        const teachersResponse = await axios.get('http://localhost:8080/api/users/role/TEACHER', {
+        const teachersResponse = await axios.get('http://localhost:8080/api/users/role/FACULTY', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -160,9 +160,9 @@ const TeacherAssignment = () => {
             }
           });
           
-          // Filter users with role 'TEACHER' and normalize
+          // Filter users with role 'FACULTY' and normalize
           const teacherUsers = (allUsersResponse.data || [])
-            .filter(user => user.role === 'TEACHER')
+            .filter(user => user.role === 'FACULTY')
             .map(normalizeTeacherData)
             .filter(teacher => teacher !== null);
             

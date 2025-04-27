@@ -101,7 +101,14 @@ const DashboardLayout = () => {
 
   // Check user role and add appropriate links
   if (userRole === 'ADMIN') {
-    navLinks.push({ to: '/users', label: 'Users', icon: <UsersIcon /> });
+    navLinks = [
+      { to: '/admin/dashboard', label: 'Dashboard', icon: <HomeIcon /> },
+      { to: '/admin/users', label: 'Users', icon: <UsersIcon /> },
+      { to: '/admin/courses', label: 'Courses', icon: <ResourceIcon /> },
+      { to: '/admin/enrollment', label: 'Enrollment', icon: <AttendanceIcon /> },
+      { to: '/admin/facilities', label: 'Facilities', icon: <FacilityIcon /> },
+      { to: '/profile', label: 'Profile', icon: <ProfileIcon /> },
+    ];
   } else if (userRole === 'FACULTY') {
     navLinks = [
       { to: '/teacher/dashboard', label: 'Dashboard', icon: <HomeIcon /> },

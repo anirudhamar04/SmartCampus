@@ -141,12 +141,12 @@ const Users = () => {
       render: (role) => {
         let color = 'blue';
         if (role === 'ADMIN') color = 'red';
-        if (role === 'TEACHER') color = 'green';
+        if (role === 'FACULTY') color = 'green';
         return <Tag color={color}>{role}</Tag>;
       },
       filters: [
         { text: 'Admin', value: 'ADMIN' },
-        { text: 'Teacher', value: 'TEACHER' },
+        { text: 'Faculty', value: 'FACULTY' },
         { text: 'Student', value: 'STUDENT' },
       ],
       onFilter: (value, record) => record.role === value,
@@ -251,7 +251,7 @@ const Users = () => {
             >
               <Select placeholder="Select a role">
                 <Option value="ADMIN">Admin</Option>
-                <Option value="TEACHER">Teacher</Option>
+                <Option value="FACULTY">Faculty</Option>
                 <Option value="STUDENT">Student</Option>
               </Select>
             </Form.Item>

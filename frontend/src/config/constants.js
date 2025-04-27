@@ -9,7 +9,8 @@ export const USER_KEY = 'currentUser';
 export const ROLES = {
   ADMIN: 'ADMIN',
   FACULTY: 'FACULTY',
-  STUDENT: 'STUDENT'
+  STUDENT: 'STUDENT',
+  STAFF: 'STAFF'
 };
 
 // Resource types

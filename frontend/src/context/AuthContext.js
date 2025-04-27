@@ -128,6 +128,10 @@ export const AuthProvider = ({ children }) => {
     return userRole === 'STUDENT';
   };
 
+  const isStaff = () => {
+    return userRole === 'STAFF';
+  };
+
   const value = {
     currentUser,
     isAuthenticated,
@@ -138,7 +142,8 @@ export const AuthProvider = ({ children }) => {
     userRole,
     isFaculty,
     isAdmin,
-    isStudent
+    isStudent,
+    isStaff
   };
 
   return (

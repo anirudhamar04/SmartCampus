@@ -1,0 +1,318 @@
+@startuml Smart Campus Management System
+
+package "com.smartcampus.model" {
+  class User {
+    -Long id
+    -String username
+    -String password
+    -String fullName
+    -String email
+    -String phoneNumber
+    -Role role
+    -boolean enabled
+    -boolean accountNonExpired
+    -boolean accountNonLocked
+    -boolean credentialsNonExpired
+    +Collection<GrantedAuthority> getAuthorities()
+  }
+  
+  class Facility {
+    -Long id
+    -String name
+    -String description
+    -String location
+    -String type
+    -Integer capacity
+    -boolean available
+    -LocalTime openingTime
+    -LocalTime closingTime
+    -String imageUrl
+    -String amenities
+    -String status
+  }
+  
+  class Resource {
+    -Long id
+    -String name
+    -String description
+    -String type
+    -Boolean available
+    -ResourceType resourceType
+  }
+  
+  class FacilityBooking {
+    -Long id
+    -LocalDateTime startTime
+    -LocalDateTime endTime
+    -String status
+    -String purpose
+    -String notes
+  }
+  
+  class Course {
+    -Long id
+    -String code
+    -String name
+    -String description
+    -String instructor
+    -Integer credits
+    -String schedule
+    -String location
+    -Integer capacity
+    -String semester
+    -String academicYear
+    -String department
+  }
+  
+  class Attendance {
+    -Long id
+    -LocalDate date
+    -boolean present
+    -String remarks
+  }
+  
+  class Notification {
+    -Long id
+    -String title
+    -String message
+    -String type
+    -LocalDateTime timestamp
+    -boolean read
+  }
+  
+  class Event {
+    -Long id
+    -String title
+    -String description
+    -LocalDateTime startTime
+    -LocalDateTime endTime
+    -String location
+    -String organizer
+    -Integer capacity
+    -String status
+  }
+  
+  class Feedback {
+    -Long id
+    -String type
+    -String title
+    -String description
+    -Integer rating
+    -LocalDateTime timestamp
+    -String status
+  }
+  
+  class LostFoundItem {
+    -Long id
+    -String itemName
+    -String description
+    -String category
+    -String location
+    -LocalDateTime dateFound
+    -String status
+    -String imageUrl
+  }
+  
+  class VisitorPass {
+    -Long id
+    -String visitorName
+    -String purpose
+    -String contactInfo
+    -String hostName
+    -LocalDateTime visitTime
+    -LocalDateTime exitTime
+    -String status
+    -String idProof
+    -String badgeNumber
+  }
+  
+  class Booking {
+    -Long id
+    -LocalDateTime startTime
+    -LocalDateTime endTime
+    -String status
+    -String purpose
+    -String remarks
+  }
+  
+  class CafeteriaItem {
+    -Long id
+    -String name
+    -String description
+    -Double price
+    -String category
+    -Boolean available
+    -String imageUrl
+  }
+  
+  class CafeteriaOrder {
+    -Long id
+    -String orderNumber
+    -LocalDateTime orderTime
+    -Double totalAmount
+    -String status
+    -String paymentMethod
+  }
+  
+  class CafeteriaOrderItem {
+    -Long id
+    -Integer quantity
+    -Double price
+  }
+  
+  class CourseResource {
+    -Long id
+    -String title
+    -String description
+    -String fileUrl
+    -String fileType
+    -LocalDateTime uploadTime
+  }
+  
+  enum Role {
+    ADMIN
+    FACULTY
+    STUDENT
+    STAFF
+    GUEST
+  }
+  
+  enum ResourceType {
+    BOOK
+    EQUIPMENT
+    SOFTWARE
+    OTHER
+  }
+}
+
+package "com.smartcampus.repository" {
+  interface UserRepository
+  interface FacilityRepository
+  interface ResourceRepository
+  interface FacilityBookingRepository
+  interface CourseRepository
+  interface AttendanceRepository
+  interface NotificationRepository
+  interface EventRepository
+  interface FeedbackRepository
+  interface LostFoundItemRepository
+  interface VisitorPassRepository
+  interface BookingRepository
+  interface CafeteriaItemRepository
+  interface CafeteriaOrderRepository
+  interface CourseResourceRepository
+}
+
+package "com.smartcampus.service" {
+  interface UserService
+  interface FacilityService
+  interface ResourceService
+  interface FacilityBookingService
+  interface CourseService
+  interface AttendanceService
+  interface NotificationService
+  interface EventService
+  interface FeedbackService
+  interface LostFoundService
+  interface VisitorPassService
+  interface BookingService
+  interface CafeteriaService
+  interface CourseResourceService
+  
+  class EventServiceImpl
+  class CourseResourceServiceImpl
+}
+
+package "com.smartcampus.controller" {
+  class UserController
+  class FacilityController
+  class ResourceController
+  class FacilityBookingController
+  class CourseController
+  class AttendanceController
+  class NotificationController
+  class EventController
+  class FeedbackController
+  class LostFoundController
+  class VisitorPassController
+  class BookingController
+  class CafeteriaController
+  class CourseResourceController
+  class AuthenticationController
+}
+
+' Relationships
+User "1" -- "*" Booking: makes >
+Resource "1" -- "*" Booking: booked for >
+User "1" -- "*" Attendance: has >
+Course "1" -- "*" Attendance: tracked in >
+User "1" -- "*" Notification: receives >
+User "1" -- "*" Event: participates >
+User "1" -- "*" Feedback: provides >
+User "1" -- "*" LostFoundItem: reports >
+User "1" -- "*" VisitorPass: hosts >
+User "1" -- "*" FacilityBooking: books >
+Facility "1" -- "*" FacilityBooking: booked for >
+User "1" -- "*" CafeteriaOrder: places >
+CafeteriaOrder "1" -- "*" CafeteriaOrderItem: contains >
+CafeteriaItem "1" -- "*" CafeteriaOrderItem: ordered as >
+Course "1" -- "*" CourseResource: contains >
+
+' Repository links
+UserRepository ..> User
+FacilityRepository ..> Facility
+ResourceRepository ..> Resource
+FacilityBookingRepository ..> FacilityBooking
+CourseRepository ..> Course
+AttendanceRepository ..> Attendance
+NotificationRepository ..> Notification
+EventRepository ..> Event
+FeedbackRepository ..> Feedback
+LostFoundItemRepository ..> LostFoundItem
+VisitorPassRepository ..> VisitorPass
+BookingRepository ..> Booking
+CafeteriaItemRepository ..> CafeteriaItem
+CafeteriaOrderRepository ..> CafeteriaOrder
+CourseResourceRepository ..> CourseResource
+
+' Service to Repository links
+UserService ..> UserRepository
+FacilityService ..> FacilityRepository
+ResourceService ..> ResourceRepository
+FacilityBookingService ..> FacilityBookingRepository
+CourseService ..> CourseRepository
+AttendanceService ..> AttendanceRepository
+NotificationService ..> NotificationRepository
+EventService ..> EventRepository
+FeedbackService ..> FeedbackRepository
+LostFoundService ..> LostFoundItemRepository
+VisitorPassService ..> VisitorPassRepository
+BookingService ..> BookingRepository
+CafeteriaService ..> CafeteriaItemRepository
+CafeteriaService ..> CafeteriaOrderRepository
+CourseResourceService ..> CourseResourceRepository
+
+' Implementation links
+EventServiceImpl ..|> EventService
+CourseResourceServiceImpl ..|> CourseResourceService
+
+' Controller to Service links
+UserController ..> UserService
+FacilityController ..> FacilityService
+ResourceController ..> ResourceService
+FacilityBookingController ..> FacilityBookingService
+CourseController ..> CourseService
+AttendanceController ..> AttendanceService
+NotificationController ..> NotificationService
+EventController ..> EventService
+FeedbackController ..> FeedbackService
+LostFoundController ..> LostFoundService
+VisitorPassController ..> VisitorPassService
+BookingController ..> BookingService
+CafeteriaController ..> CafeteriaService
+CourseResourceController ..> CourseResourceService
+AuthenticationController ..> UserService
+
+@enduml 
+
+
